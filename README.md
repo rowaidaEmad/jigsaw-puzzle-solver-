@@ -1,41 +1,56 @@
 # Jigsaw Puzzle Solver
 
-A jigsaw puzzle solver using _awesomeness_ and computer vision :)
-we're live on: [puzzle-crisis.diran.app](https://puzzle-crisis.diran.app)
+what do we need to achieve??
+we need to solve the puzzle...
 
-## What it does
+how to `programatically`??
 
-For each input puzzle image (2×2, 4×4, or 8×8 grid), Phase 1:
+1. hold the image get
+2. the pieces out of it
+3. for each piece => do some sort of dynamic filtering to make dealing with the piece more ez in next steps
+4. for all pieces with each other: try to do some sort of fitting with a score for every two pieces
+5. sort them depending on this array and yaah get the final correct image
 
-1. **Splits** the puzzle into `N×N` rectangular tiles (pieces).
-2. **Upscales** small/low-resolution tiles using **Lanczos interpolation** followed by light sharpening, to make edges clearer.
-3. **Preprocesses** each tile:
-   - convert to **grayscale**
-   - apply **median blur** for noise reduction while preserving edges.
-4. **Segments** each tile into foreground puzzle piece vs background using:
-   - **adaptive thresholding**, then
-   - **morphological operations** (opening/closing) to clean the mask.
-5. **Extracts piece contours** from the cleaned mask.
-6. **Detects edges** using **Canny edge detection** on the preprocessed tile, to be used later for edge-based matching.
+## Installation
 
-The output of Phase 1 is:
+```bash
+pip install -r requirements.txt
+```
 
-- preprocessed tiles,
-- binary masks for each piece,
-- contours and edge maps that will be consumed in later phases (feature extraction and matching).
+## Usage
 
-## Installation & Environment
+```bash
+# Process all puzzles with greedy method (default)
+python main.py
 
-the project is tested on Python 3.11 and 3.12 on Arch Linux, Windows 11, and MacOS 26.
+# Process only 2x2 puzzles
+python main.py --only 2x2
 
-1. Install dependencies:
+# Use brute force method (only for small puzzles)
+python main.py --only 2x2 --method brute_force
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+# Evaluate accuracy (requires data/correct/ folder)
+python main.py --evaluate
 
-2. Put your puzzle images in `data/puzzle_NxN/` folders (it's already there for you)
+# Process specific number of images
+python main.py --num-images 50
 
-3. Open and run `phase1.ipynb` in Jupyter
+# Combine options
+python main.py --only 2x2 --method greedy --evaluate --num-images 10
+```
 
-4. you will find the processed tiles in `output/puzzle_NxN/` folders
+**Options:**
+
+- `--base-dir`: Input directory (default: `data`)
+- `--output-dir`: Output directory (default: `output`)
+- `--image-size`: Puzzle image size (default: 224)
+- `--num-images`: Number of images to process (default: 110)
+- `--only`: Process specific size: `2x2`, `4x4`, `8x8`, or `all` (default: `all`)
+- `--method`: Solving method: `greedy` or `brute_force` (default: `greedy`)
+- `--evaluate`: Evaluate accuracy after solving
+
+**Note:** By default, the solver looks for puzzle images in the `data/` folder and saves results to `output/`. Make sure your puzzle images are placed in:
+
+- `data/puzzle_2x2/` for 2x2 puzzles
+- `data/puzzle_4x4/` for 4x4 puzzles
+- `data/puzzle_8x8/` for 8x8 puzzles
