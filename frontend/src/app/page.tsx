@@ -54,7 +54,14 @@ export default function Home() {
           </div>
 
           <div className="flex-1 flex justify-center">
-            <Image src="/icon-480.svg" alt="Puzzle Solver" width={400} height={400} className="dark:invert opacity-90" />
+            <Image
+              src="/icon-480.svg"
+              alt="Puzzle Solver"
+              width={400}
+              height={400}
+              className="dark:invert opacity-90"
+              style={{ filter: 'drop-shadow(-5px 7px 35px var(--primary))' }}
+            />
           </div>
         </div>
 
