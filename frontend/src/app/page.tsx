@@ -91,7 +91,7 @@ export default function Home() {
         </div>
 
         {/* Stats */}
-        <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-12 bg-slate-50 dark:bg-slate-900/50">
+        <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-12 bg-slate-50 dark:bg-slate-900/50 mb-32">
           <div className="grid grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-4xl font-bold text-black dark:text-white mb-2">2-8×8</div>
@@ -104,6 +104,61 @@ export default function Home() {
             <div>
               <div className="text-4xl font-bold text-black dark:text-white mb-2">∞</div>
               <div className="text-sm text-slate-600 dark:text-slate-400">Awesomeness Level</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Team Section */}
+        <div className="mb-32">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-black dark:text-white mb-3">The Awesome Squad</h2>
+            <p className="text-slate-600 dark:text-slate-400">The humans behind this thing</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+            {/* Sherqo */}
+            <div className="group text-center">
+              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
+                <Image src="/icon-96.svg" alt="Sherqo" width={48} height={48} className="dark:invert" />
+              </div>
+              <h3 className="font-semibold text-black dark:text-white mb-1">Sherqo</h3>
+              <p className="text-xs text-[#5185A1] font-medium">Upscaling Specialist</p>
+            </div>
+
+            {/* Rowaida */}
+            <div className="group text-center">
+              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
+                <Image src="/icon-96.svg" alt="Rowaida" width={48} height={48} className="dark:invert" />
+              </div>
+              <h3 className="font-semibold text-black dark:text-white mb-1">Rowaida</h3>
+              <p className="text-xs text-[#5185A1] font-medium">Filter Wizard</p>
+            </div>
+
+            {/* Habiba */}
+            <div className="group text-center">
+              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
+                <Image src="/icon-96.svg" alt="Habiba" width={48} height={48} className="dark:invert" />
+              </div>
+              <h3 className="font-semibold text-black dark:text-white mb-1">Habiba</h3>
+              <p className="text-xs text-[#5185A1] font-medium">Morphology Expert</p>
+            </div>
+
+            {/* Somaya */}
+            <div className="group text-center">
+              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
+                <Image src="/icon-96.svg" alt="Somaya" width={48} height={48} className="dark:invert" />
+              </div>
+              <h3 className="font-semibold text-black dark:text-white mb-1">Somaya</h3>
+              <p className="text-xs text-[#5185A1] font-medium">Edge Detection Pro</p>
+            </div>
+
+            {/* Mohamed */}
+            <div className="group text-center">
+              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
+                <Image src="/icon-96.svg" alt="Mohamed" width={48} height={48} className="dark:invert" />
+              </div>
+              <h3 className="font-semibold text-black dark:text-white mb-1">M. Osama</h3>
+              <p className="text-xs text-[#5185A1] font-medium">Segmentation Guru</p>
             </div>
           </div>
         </div>
