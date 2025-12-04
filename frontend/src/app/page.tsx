@@ -13,13 +13,13 @@ export default function Home() {
           </div>
 
           <nav className="flex items-center gap-6">
-            <a href="#features" className="text-sm text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white transition">
+            <a href="#features" className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#5185A1] transition">
               Features
             </a>
-            <a href="#demo" className="text-sm text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white transition">
+            <a href="#demo" className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#5185A1] transition">
               Demo
             </a>
-            <Button size="sm" className="bg-black dark:bg-white text-white dark:text-black hover:bg-slate-800 dark:hover:bg-slate-200">
+            <Button size="sm" className="bg-[#5185A1] hover:bg-[#4174-90] text-white">
               Try Now
             </Button>
           </nav>
@@ -31,7 +31,7 @@ export default function Home() {
         <div className="flex flex-col md:flex-row items-center gap-12 mb-32">
           <div className="flex-1 space-y-6">
             <div className="inline-block">
-              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">awesomeness</span>
+              <span className="text-sm font-medium text-[#5185A1]">awesomeness</span>
             </div>
 
             <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-black dark:text-white">
@@ -45,10 +45,10 @@ export default function Home() {
             </p>
 
             <div className="flex gap-3 pt-4">
-              <Button size="lg" className="bg-black dark:bg-white text-white dark:text-black hover:bg-slate-800 dark:hover:bg-slate-200">
+              <Button size="lg" className="bg-[#5185A1] hover:bg-[#417490] text-white">
                 Get Started
               </Button>
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="outline" className="border-[#5185A1] text-[#5185A1] hover:bg-[#5185A1] hover:text-white">
                 View Demo
               </Button>
             </div>
@@ -64,24 +64,24 @@ export default function Home() {
           <h2 className="text-4xl font-bold text-black dark:text-white mb-12 text-center">How it works</h2>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition">
-              <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-2xl mb-4">🎨</div>
+            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-[#5185A1] transition">
+              <div className="w-12 h-12 rounded-lg bg-[#5185A1]/10 flex items-center justify-center text-2xl mb-4">🎨</div>
               <h3 className="text-xl font-semibold text-black dark:text-white mb-3">Preprocessing</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 Upscaling with Lanczos interpolation, adaptive thresholding, and edge detection to prepare puzzle pieces.
               </p>
             </div>
 
-            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition">
-              <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-2xl mb-4">🔍</div>
+            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-[#5185A1] transition">
+              <div className="w-12 h-12 rounded-lg bg-[#5185A1]/10 flex items-center justify-center text-2xl mb-4">🔍</div>
               <h3 className="text-xl font-semibold text-black dark:text-white mb-3">Computer Vision</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 Advanced contour extraction, Canny edge detection, and morphological operations for precise analysis.
               </p>
             </div>
 
-            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition">
-              <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-2xl mb-4">⚡</div>
+            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-[#5185A1] transition">
+              <div className="w-12 h-12 rounded-lg bg-[#5185A1]/10 flex items-center justify-center text-2xl mb-4">⚡</div>
               <h3 className="text-xl font-semibold text-black dark:text-white mb-3">Multiple Sizes</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 Support for 2×2, 4×4, and 8×8 puzzle grids with automatic tile extraction and segmentation.
