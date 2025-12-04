@@ -1,6 +1,7 @@
 # Jigsaw Puzzle Solver
 
 A jigsaw puzzle solver using _awesomeness_ and computer vision :)
+we're live on: [puzzle-crisis.diran.app](https://puzzle-crisis.diran.app)
 
 ## What it does
 
@@ -9,7 +10,7 @@ For each input puzzle image (2×2, 4×4, or 8×8 grid), Phase 1:
 1. **Splits** the puzzle into `N×N` rectangular tiles (pieces).
 2. **Upscales** small/low-resolution tiles using **Lanczos interpolation** followed by light sharpening, to make edges clearer.
 3. **Preprocesses** each tile:
-   - convert to **grayscale**  
+   - convert to **grayscale**
    - apply **median blur** for noise reduction while preserving edges.
 4. **Segments** each tile into foreground puzzle piece vs background using:
    - **adaptive thresholding**, then

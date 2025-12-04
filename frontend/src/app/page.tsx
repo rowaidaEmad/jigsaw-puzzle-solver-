@@ -1,6 +1,35 @@
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Grid } from '@/components/ui/grid-pattern';
+import Footer from '@/components/layout/Footer';
+
+const features = [
+  {
+    title: 'Preprocessing',
+    description: 'Upscaling with Lanczos interpolation, adaptive thresholding, and edge detection to prepare puzzle pieces.',
+  },
+  {
+    title: 'CV',
+    description: 'Advanced contour extraction, Canny edge detection, and morphological operations for precise analysis.',
+  },
+  {
+    title: '2-8×8',
+    description: 'Support for 2×2, 4×4, and 8×8 puzzle grids with automatic tile extraction and segmentation.',
+  },
+  {
+    title: '5 Steps',
+    description: 'Complete processing pipeline from upscaling to contour extraction.',
+  },
+  {
+    title: 'Edge Detection',
+    description: 'Canny edge detection algorithm to identify puzzle piece boundaries with precision.',
+  },
+  {
+    title: '∞',
+    description: 'Awesomeness Level',
+  },
+];
 
 export default function Home() {
   return (
@@ -66,51 +95,19 @@ export default function Home() {
         </div>
 
         {/* Features */}
-        <div id="features" className="mb-32">
+        <div id="features" className="py-20 lg:py-32 mb-32">
           <h2 className="text-4xl font-bold text-black dark:text-white mb-12 text-center">How it works</h2>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-primary transition">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl mb-4">🎨</div>
-              <h3 className="text-xl font-semibold text-black dark:text-white mb-3">Preprocessing</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Upscaling with Lanczos interpolation, adaptive thresholding, and edge detection to prepare puzzle pieces.
-              </p>
-            </div>
-
-            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-primary transition">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold text-black dark:text-white mb-3">Computer Vision</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Advanced contour extraction, Canny edge detection, and morphological operations for precise analysis.
-              </p>
-            </div>
-
-            <div className="group p-8 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-primary transition">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl mb-4">⚡</div>
-              <h3 className="text-xl font-semibold text-black dark:text-white mb-3">Multiple Sizes</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Support for 2×2, 4×4, and 8×8 puzzle grids with automatic tile extraction and segmentation.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-12 bg-slate-50 dark:bg-slate-900/50 mb-32">
-          <div className="grid grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-black dark:text-white mb-2">2-8×8</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">Grid Sizes</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-black dark:text-white mb-2">5 Steps</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">Processing Pipeline</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-black dark:text-white mb-2">∞</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">Awesomeness Level</div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {features.map((feature, idx) => (
+              <div
+                key={feature.title}
+                className="relative bg-gradient-to-b dark:from-slate-900 from-slate-50 dark:to-black to-white p-8 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 text-center">
+                <Grid size={20} seed={`${feature.title}-${idx}`} />
+                <p className="text-4xl font-bold text-black dark:text-white relative z-20 mb-3">{feature.title}</p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm relative z-20">{feature.description}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -125,7 +122,7 @@ export default function Home() {
             {/* Sherqo */}
             <div className="group text-center">
               <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/icon-96.svg" alt="Sherqo" width={48} height={48} className="dark:invert" />
+                <Image src="/ph2.jpg" alt="Sherqo" width={80} height={80} className="w-full h-full object-cover dark:invert" />
               </div>
               <h3 className="font-semibold text-black dark:text-white mb-1">Sherqo</h3>
               <p className="text-xs text-primary font-medium">Upscaling Specialist</p>
@@ -134,7 +131,7 @@ export default function Home() {
             {/* Rowaida */}
             <div className="group text-center">
               <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/icon-96.svg" alt="Rowaida" width={48} height={48} className="dark:invert" />
+                <Image src="/ph.jpg" alt="Rowaida" width={80} height={80} className="w-full h-full object-cover dark:invert" />
               </div>
               <h3 className="font-semibold text-black dark:text-white mb-1">Rowaida</h3>
               <p className="text-xs text-primary font-medium">Filter Wizard</p>
@@ -143,7 +140,7 @@ export default function Home() {
             {/* Habiba */}
             <div className="group text-center">
               <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/icon-96.svg" alt="Habiba" width={48} height={48} className="dark:invert" />
+                <Image src="/ph.jpg" alt="Habiba" width={80} height={80} className="w-full h-full object-cover dark:invert" />
               </div>
               <h3 className="font-semibold text-black dark:text-white mb-1">Habiba</h3>
               <p className="text-xs text-primary font-medium">Morphology Expert</p>
@@ -152,7 +149,7 @@ export default function Home() {
             {/* Somaya */}
             <div className="group text-center">
               <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/icon-96.svg" alt="Somaya" width={48} height={48} className="dark:invert" />
+                <Image src="/ph.jpg" alt="Somaya" width={80} height={80} className="w-full h-full object-cover dark:invert" />
               </div>
               <h3 className="font-semibold text-black dark:text-white mb-1">Somaya</h3>
               <p className="text-xs text-primary font-medium">Edge Detection Pro</p>
@@ -161,7 +158,7 @@ export default function Home() {
             {/* Mohamed */}
             <div className="group text-center">
               <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/icon-96.svg" alt="Mohamed" width={48} height={48} className="dark:invert" />
+                <Image src="/ph2.jpg" alt="Mohamed" width={80} height={80} className="w-full h-full object-cover dark:invert" />
               </div>
               <h3 className="font-semibold text-black dark:text-white mb-1">M. Osama</h3>
               <p className="text-xs text-primary font-medium">Segmentation Guru</p>
@@ -171,19 +168,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 mt-20">
-        <div className="container mx-auto px-6 py-8 max-w-6xl flex items-center justify-between">
-          <div className="text-sm text-slate-600 dark:text-slate-400">Built with awesomeness</div>
-          <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
-            <a href="#" className="hover:text-black dark:hover:text-white transition">
-              GitHub
-            </a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition">
-              Docs
-            </a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

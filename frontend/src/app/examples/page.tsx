@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
+import Footer from '@/components/layout/Footer';
 import { useState } from 'react';
 
 const examples = [
@@ -152,26 +153,14 @@ export default function ExamplesPage() {
         <div className="mt-20 text-center p-12 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
           <h2 className="text-3xl font-bold text-black dark:text-white mb-4">Ready to try it yourself?</h2>
           <p className="text-slate-600 dark:text-slate-400 mb-6">Upload your own puzzle image and see the preprocessing in action</p>
-          <Button size="lg" className="bg-primary hover:bg-primary/90 text-white">
+          <Button disabled size="lg" className="bg-primary hover:bg-primary/90 text-white">
             Try It Now (Coming Soon)
           </Button>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 mt-20">
-        <div className="container mx-auto px-6 py-8 max-w-6xl flex items-center justify-between">
-          <div className="text-sm text-slate-600 dark:text-slate-400">Built with awesomeness</div>
-          <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
-            <a href="#" className="hover:text-black dark:hover:text-white transition">
-              GitHub
-            </a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition">
-              Docs
-            </a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
