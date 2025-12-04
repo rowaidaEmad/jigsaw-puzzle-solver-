@@ -75,7 +75,7 @@ export default function ExamplesPage() {
             return (
               <div key={example.title} className="space-y-6">
                 {/* Title and Variant Selector */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
                   <div>
                     <h2 className="text-3xl font-bold text-black dark:text-white">{example.title}</h2>
                     <p className="text-slate-600 dark:text-slate-400">{example.description}</p>

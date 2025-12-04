@@ -19,7 +19,7 @@ export function Grid({ pattern, size, seed }: { pattern?: Point[]; size?: number
     return res;
   }, [pattern, seed]);
   return (
-    <div className="pointer-events-none absolute left-1/2 top-0 -ml-20 -mt-2 h-full w-full [mask-image:linear-gradient(white,transparent)]">
+    <div className="pointer-events-none absolute left-1/2 top-0 -mt-2 h-full w-full transform -translate-x-1/2 [mask-image:linear-gradient(white,transparent)]">
       <div className="absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] dark:from-slate-900/30 from-slate-100/30 to-slate-300/30 dark:to-slate-900/30 opacity-100">
         <GridPattern
           width={size ?? 20}

@@ -6,7 +6,7 @@ export default function DocsPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-black">
       <main className="container mx-auto px-6 py-12 max-w-6xl">
-        <div className="relative p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-b from-white to-slate-50 dark:from-black dark:to-slate-900">
+        <div className="relative p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-linear-to-b from-white to-slate-50 dark:from-black dark:to-slate-900 overflow-hidden">
           <div className="flex items-center gap-4 mb-6">
             <Grid size={14} seed="docs-hero" />
             <h1 className="text-3xl font-bold text-black dark:text-white">Project README - Phase 1</h1>
