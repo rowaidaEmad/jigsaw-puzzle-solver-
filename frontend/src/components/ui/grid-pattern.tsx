@@ -1,14 +1,16 @@
 'use client';
 
-import { useId, useMemo } from 'react';
+import React, { useId, useMemo } from 'react';
 
-export function Grid({ pattern, size, seed }: { pattern?: number[][]; size?: number; seed?: string | number }) {
+type Point = [number, number];
+
+export function Grid({ pattern, size, seed }: { pattern?: Point[]; size?: number; seed?: string | number }) {
   // seeded RNG to make patterns deterministic across SSR and CSR
   const p = useMemo(() => {
     if (pattern) return pattern;
     const seedNum = typeof seed === 'number' ? seed : stringToSeed(String(seed ?? 'default'));
     const rng = makeRng(seedNum);
-    const res: number[][] = [];
+    const res: Point[] = [];
     for (let i = 0; i < 5; i++) {
       const a = Math.floor(rng() * 4) + 7;
       const b = Math.floor(rng() * 6) + 1;
@@ -52,7 +54,15 @@ function makeRng(seedNum: number) {
   };
 }
 
-export function GridPattern({ width, height, x: offsetX, y: offsetY, squares, ...props }: any) {
+export interface GridPatternProps extends React.SVGProps<SVGSVGElement> {
+  width: number;
+  height: number;
+  x?: number;
+  y?: number;
+  squares?: Point[];
+}
+
+export function GridPattern({ width, height, x: offsetX = 0, y: offsetY = 0, squares, ...props }: GridPatternProps) {
   const patternId = useId();
 
   return (
@@ -65,7 +75,7 @@ export function GridPattern({ width, height, x: offsetX, y: offsetY, squares, ..
       <rect width="100%" height="100%" strokeWidth={0} fill={`url(#${patternId})`} />
       {squares && (
         <svg x={offsetX} y={offsetY} className="overflow-visible">
-          {squares.map(([sx, sy]: any, idx: number) => (
+          {squares.map(([sx, sy]: Point, idx: number) => (
             <rect strokeWidth="0" key={`${sx}-${sy}-${idx}`} width={width + 1} height={height + 1} x={sx * width} y={sy * height} />
           ))}
         </svg>
