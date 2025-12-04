@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -16,12 +17,11 @@ export default function Home() {
             <a href="#features" className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#5185A1] transition">
               Features
             </a>
-            <a href="#demo" className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#5185A1] transition">
-              Demo
-            </a>
-            <Button size="sm" className="bg-[#5185A1] hover:bg-[#4174-90] text-white">
-              Try Now
-            </Button>
+            <Link href="/examples" className="">
+              <Button size="sm" className="bg-[#5185A1] hover:bg-[#417490] text-white">
+                Try Now
+              </Button>
+            </Link>
           </nav>
         </div>
       </header>
@@ -45,12 +45,11 @@ export default function Home() {
             </p>
 
             <div className="flex gap-3 pt-4">
-              <Button size="lg" className="bg-[#5185A1] hover:bg-[#417490] text-white">
-                Get Started
-              </Button>
-              <Button size="lg" variant="outline" className="border-[#5185A1] text-[#5185A1] hover:bg-[#5185A1] hover:text-white">
-                View Demo
-              </Button>
+              <Link href="/examples">
+                <Button size="lg" className="bg-[#5185A1] hover:bg-[#417490] text-white">
+                  View Examples
+                </Button>
+              </Link>
             </div>
           </div>
 
