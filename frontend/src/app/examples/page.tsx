@@ -2,8 +2,6 @@
 
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import Link from 'next/link';
-import Footer from '@/components/layout/Footer';
 import { useState } from 'react';
 
 const examples = [
@@ -41,22 +39,6 @@ export default function ExamplesPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
-      {/* Header */}
-      <header className="border-b border-slate-200 dark:border-slate-800">
-        <div className="container mx-auto px-6 py-4 max-w-6xl flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/icon-96.svg" alt="Logo" width={40} height={40} className="dark:invert" />
-            <span className="text-xl font-bold text-black dark:text-white">Puzzle Solver</span>
-          </Link>
-
-          <Link href="/">
-            <Button variant="ghost" size="sm">
-              ← Back to Home
-            </Button>
-          </Link>
-        </div>
-      </header>
-
       <main className="container mx-auto px-6 py-16 max-w-6xl">
         {/* Hero */}
         <div className="text-center mb-16">
@@ -158,9 +140,6 @@ export default function ExamplesPage() {
           </Button>
         </div>
       </main>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Grid } from '@/components/ui/grid-pattern';
-import Footer from '@/components/layout/Footer';
 
 const features = [
   {
@@ -31,43 +30,22 @@ const features = [
   },
 ];
 
+const team = [
+  { name: 'Sherqo', role: 'Upscaling Specialist', image: '/ph2.jpg', github: 'https://github.com/sharqawycs' },
+  { name: 'Rowaida', role: 'Filter Wizard', image: '/ph.jpg', github: 'https://github.com/rowaidaEmad' },
+  { name: 'Habiba', role: 'Morphology Expert', image: '/ph.jpg', github: 'https://github.com/habibadawod' },
+  { name: 'Somaya', role: 'Edge Detection Pro', image: '/ph.jpg', github: 'https://github.com/somayagalal' },
+  { name: 'M. Osama', role: 'Segmentation Guru', image: '/ph2.jpg', github: 'https://github.com/mohammedosama27' },
+];
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-white dark:bg-black">
-      {/* Header */}
-      <header className="border-b border-slate-200 dark:border-slate-800">
-        <div className="container mx-auto px-6 py-4 max-w-6xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image src="/icon-96.svg" alt="Logo" width={40} height={40} className="dark:invert" />
-            <span className="text-xl font-bold text-black dark:text-white">Puzzle Solver</span>
-          </div>
-
-          <nav className="flex items-center gap-6">
-            <a href="#features" className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary transition">
-              Features
-            </a>
-            <Link href="/examples" className="">
-              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white">
-                Try Now
-              </Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
-
       <main className="container mx-auto px-6 py-16 max-w-6xl">
         {/* Hero */}
         <div className="flex flex-col md:flex-row items-center gap-12 mb-32">
           <div className="flex-1 space-y-6">
-            <div className="inline-block">
-              <span className="text-sm font-medium text-primary">awesomeness</span>
-            </div>
-
-            <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-black dark:text-white">
-              Jigsaw Puzzle
-              <br />
-              Solver
-            </h1>
+            <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-black dark:text-white">Awesome Jigsaw Puzzle Solver</h1>
 
             <p className="text-xl text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
               Computer vision meets puzzle solving. Upload an image, customize parameters, and watch the algorithms work their magic.
@@ -119,56 +97,38 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-            {/* Sherqo */}
-            <div className="group text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/ph2.jpg" alt="Sherqo" width={80} height={80} className="w-full h-full object-cover dark:invert" />
-              </div>
-              <h3 className="font-semibold text-black dark:text-white mb-1">Sherqo</h3>
-              <p className="text-xs text-primary font-medium">Upscaling Specialist</p>
-            </div>
+            {team.map(member => {
+              const githubHref = member.github?.trim().length
+                ? member.github
+                : `https://github.com/search?q=${encodeURIComponent(member.name)}&type=users`;
 
-            {/* Rowaida */}
-            <div className="group text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/ph.jpg" alt="Rowaida" width={80} height={80} className="w-full h-full object-cover dark:invert" />
-              </div>
-              <h3 className="font-semibold text-black dark:text-white mb-1">Rowaida</h3>
-              <p className="text-xs text-primary font-medium">Filter Wizard</p>
-            </div>
+              return (
+                <div key={member.name} className="group text-center">
+                  <a href={githubHref} target="_blank" rel="noopener noreferrer" className="block">
+                    <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
+                      <Image
+                        src={member.image}
+                        alt={member.name}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover dark:invert"
+                      />
+                    </div>
+                  </a>
 
-            {/* Habiba */}
-            <div className="group text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/ph.jpg" alt="Habiba" width={80} height={80} className="w-full h-full object-cover dark:invert" />
-              </div>
-              <h3 className="font-semibold text-black dark:text-white mb-1">Habiba</h3>
-              <p className="text-xs text-primary font-medium">Morphology Expert</p>
-            </div>
+                  <a href={githubHref} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    <h3 className="font-semibold text-black dark:text-white mb-1">{member.name}</h3>
+                  </a>
 
-            {/* Somaya */}
-            <div className="group text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/ph.jpg" alt="Somaya" width={80} height={80} className="w-full h-full object-cover dark:invert" />
-              </div>
-              <h3 className="font-semibold text-black dark:text-white mb-1">Somaya</h3>
-              <p className="text-xs text-primary font-medium">Edge Detection Pro</p>
-            </div>
-
-            {/* Mohamed */}
-            <div className="group text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition overflow-hidden">
-                <Image src="/ph2.jpg" alt="Mohamed" width={80} height={80} className="w-full h-full object-cover dark:invert" />
-              </div>
-              <h3 className="font-semibold text-black dark:text-white mb-1">M. Osama</h3>
-              <p className="text-xs text-primary font-medium">Segmentation Guru</p>
-            </div>
+                  <p className="text-xs text-primary font-medium">{member.role}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <Footer />
     </div>
   );
 }
