@@ -58,10 +58,9 @@ class Individual:
 class GeneticSolver:
     def __init__(
         self,
-        pieces: List[np.ndarray],
+        pieces_dict: dict,
         rows: int,
         columns: int,
-        contours: Optional[List[np.ndarray]] = None,
         population_size: int = 100,
         elite_size: int = 4,
         generations: int = 100,
@@ -71,11 +70,10 @@ class GeneticSolver:
         mutation_swaps: int = 1,
         local_iters: int = 10,
     ):
-        self.pieces = pieces
+        self.pieces_dict = pieces_dict
         self.rows = rows
         self.cols = columns
-        self.contours = contours
-        self.n = rows * columns
+        self.n = len(pieces_dict["original"])
         self.pop_size = population_size
         self.elite_size = elite_size
         self.generations = generations
@@ -94,15 +92,11 @@ class GeneticSolver:
         """Precompute all pairwise dissimilarities."""
         self.diss = np.zeros((self.n, self.n, 4))
         for i in range(self.n):
-            c1 = self.contours[i] if self.contours else None
             for j in range(self.n):
                 if i == j:
                     continue
-                c2 = self.contours[j] if self.contours else None
                 for k in range(4):
-                    self.diss[i, j, k] = self.sim.compute(
-                        self.pieces[i], self.pieces[j], k, c1, c2
-                    )
+                    self.diss[i, j, k] = self.sim.compute(i, j, k, self.pieces_dict)
 
     def _build_best_match_table(self):
         """Build sorted best-match lists for each piece/orientation."""

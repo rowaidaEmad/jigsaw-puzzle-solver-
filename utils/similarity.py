@@ -13,6 +13,33 @@ import numpy as np
 from typing import Optional
 
 
+# ============================================================================
+# CONFIGURATION - Modify these values to tune similarity metrics
+# ============================================================================
+
+# Color comparison depth (how many pixel rows/cols to compare at edges)
+# Higher = considers more pixels from the edge, slower but more accurate
+COLOR_DEPTH = 2
+
+# Edge comparison depth (how many pixel rows/cols to sample from binary edges)
+# Higher = compares more of the edge strip, can help with noisy edges
+EDGE_DEPTH = 1
+
+# Histogram comparison parameters
+HISTOGRAM_BINS = 32              # Number of bins for color histogram
+HISTOGRAM_EDGE_DEPTH = 3         # Pixel depth for histogram region
+
+# Texture comparison depth
+# Higher = considers larger region for texture analysis
+TEXTURE_DEPTH = 5
+
+# Use LAB color space instead of RGB for color comparisons
+# LAB is perceptually uniform, often better for color matching
+USE_LAB_COLOR = True
+
+# ============================================================================
+
+
 def rgb_to_lab(image: np.ndarray) -> np.ndarray:
     """Convert RGB image to LAB color space."""
     if len(image.shape) == 2:
@@ -182,20 +209,69 @@ def texture_match(
     return float(abs(var1 - var2))
 
 
+def _is_binary_edge_image(img: np.ndarray) -> bool:
+    """Check if image is a binary edge image (black background, white edges)."""
+    gray = to_gray(img)
+    unique = np.unique(gray)
+    return len(unique) == 2 and 0 in unique and 255 in unique
+
+
+def edge_gradient_binary(
+    p1: np.ndarray, p2: np.ndarray, orientation: int, depth: int = 1
+) -> float:
+    """
+    Compare preprocessed binary edge images directly.
+    Samples a strip of 'depth' pixels at the boundary and compares edge presence.
+
+    Args:
+        p1, p2: Binary edge images (0=no edge, 255=edge)
+        orientation: 0=top, 1=bottom, 2=left, 3=right
+        depth: How many pixel rows/cols to sample from the border
+
+    Returns:
+        Fraction of mismatched edge pixels [0, 1]
+    """
+    g1, g2 = to_gray(p1), to_gray(p2)
+
+    # Extract edge strips based on orientation
+    if orientation == 0:  # p2 above p1
+        strip1 = g1[:depth, :]
+        strip2 = g2[-depth:, :]
+    elif orientation == 1:  # p2 below p1
+        strip1 = g1[-depth:, :]
+        strip2 = g2[:depth, :]
+    elif orientation == 2:  # p2 left of p1
+        strip1 = g1[:, :depth]
+        strip2 = g2[:, -depth:]
+    else:  # p2 right of p1
+        strip1 = g1[:, -depth:]
+        strip2 = g2[:, :depth]
+
+    # Binarize (in case of any compression artifacts)
+    strip1 = (strip1 > 127).astype(np.uint8)
+    strip2 = (strip2 > 127).astype(np.uint8)
+
+    # Calculate fraction of mismatched edge pixels
+    diff = np.abs(strip1.astype(np.int16) - strip2.astype(np.int16))
+    mismatch_fraction = np.sum(diff) / diff.size
+
+    return float(mismatch_fraction)
+
+
 # --- Combined Calculator ---
 
 
 class SimilarityCalculator:
     """
-    Weighted combination of similarity functions.
+    Weighted combination of similarity functions using preprocessed piece types.
 
-    Adjust weights to emphasize different features:
-        - color: Basic color matching at edges
-        - gradient: Gradient continuation prediction
-        - histogram: Color distribution matching
-        - edge: Edge gradient matching
-        - contour: Contour image matching
-        - texture: Texture variance matching
+    Each metric uses the appropriate preprocessed version:
+        - color: Uses upscaled pieces
+        - gradient: Uses upscaled pieces
+        - histogram: Uses upscaled pieces
+        - edge: Uses edge-extracted pieces
+        - contour: Uses contour pieces
+        - texture: Uses preprocessed pieces
     """
 
     def __init__(
@@ -206,8 +282,6 @@ class SimilarityCalculator:
         weight_edge: float = 0.3,
         weight_contour: float = 0.2,
         weight_texture: float = 0.1,
-        color_depth: int = 2,
-        use_lab: bool = True,
     ):
         self.w_color = weight_color
         self.w_gradient = weight_gradient
@@ -215,38 +289,62 @@ class SimilarityCalculator:
         self.w_edge = weight_edge
         self.w_contour = weight_contour
         self.w_texture = weight_texture
-        self.color_depth = color_depth
-        self.use_lab = use_lab
 
     def compute(
         self,
-        p1: np.ndarray,
-        p2: np.ndarray,
+        idx1: int,
+        idx2: int,
         orientation: int,
-        c1: Optional[np.ndarray] = None,
-        c2: Optional[np.ndarray] = None,
+        pieces_dict: dict,
     ) -> float:
-        """Compute combined dissimilarity. Lower = better match."""
+        """
+        Compute combined dissimilarity using preprocessed pieces.
+
+        Args:
+            idx1, idx2: Piece indices
+            orientation: 0=top, 1=bottom, 2=left, 3=right
+            pieces_dict: Dict with keys 'original', 'upscaled', 'edges', 'contours', 'prep', 'binary'
+
+        Returns:
+            Dissimilarity score (lower = better match)
+        """
         total = 0.0
 
-        if self.w_color > 0:
+        # Color comparison: use upscaled pieces
+        if self.w_color > 0 and "upscaled" in pieces_dict:
+            p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
             total += self.w_color * color_ssd(
-                p1, p2, orientation, self.use_lab, self.color_depth
+                p1, p2, orientation, USE_LAB_COLOR, COLOR_DEPTH
             )
 
-        if self.w_gradient > 0:
+        # Gradient compatibility: use upscaled pieces
+        if self.w_gradient > 0 and "upscaled" in pieces_dict:
+            p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
             total += self.w_gradient * gradient_compatibility(p1, p2, orientation)
 
-        if self.w_histogram > 0:
-            total += self.w_histogram * histogram_similarity(p1, p2, orientation)
+        # Histogram: use upscaled pieces
+        if self.w_histogram > 0 and "upscaled" in pieces_dict:
+            p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
+            total += self.w_histogram * histogram_similarity(
+                p1, p2, orientation, HISTOGRAM_BINS, HISTOGRAM_EDGE_DEPTH
+            )
 
-        if self.w_edge > 0:
-            total += self.w_edge * edge_gradient(p1, p2, orientation)
+        # Edge gradient: use preprocessed edge images
+        if self.w_edge > 0 and "edges" in pieces_dict:
+            e1, e2 = pieces_dict["edges"][idx1], pieces_dict["edges"][idx2]
+            # Use binary edge comparison with configured depth
+            total += self.w_edge * edge_gradient_binary(
+                e1, e2, orientation, EDGE_DEPTH
+            )
 
-        if self.w_contour > 0 and c1 is not None and c2 is not None:
+        # Contour matching: use contour images
+        if self.w_contour > 0 and "contours" in pieces_dict:
+            c1, c2 = pieces_dict["contours"][idx1], pieces_dict["contours"][idx2]
             total += self.w_contour * contour_match(c1, c2, orientation)
 
-        if self.w_texture > 0:
-            total += self.w_texture * texture_match(p1, p2, orientation)
+        # Texture: use prep pieces
+        if self.w_texture > 0 and "prep" in pieces_dict:
+            p1, p2 = pieces_dict["prep"][idx1], pieces_dict["prep"][idx2]
+            total += self.w_texture * texture_match(p1, p2, orientation, TEXTURE_DEPTH)
 
         return total

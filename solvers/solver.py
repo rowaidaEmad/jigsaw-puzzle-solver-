@@ -9,59 +9,54 @@ from utils.similarity import SimilarityCalculator
 
 
 def solve(
-    pieces: List[np.ndarray],
+    pieces_dict: dict,
     rows: int,
     cols: int,
     method: str = "genetic",
-    contours: Optional[List[np.ndarray]] = None,
     similarity: Optional[SimilarityCalculator] = None,
     **kwargs,
 ) -> List[int]:
     """
-    Solve a jigsaw puzzle.
+    Solve a jigsaw puzzle using preprocessed piece types.
 
     Args:
-        pieces: List of piece images
+        pieces_dict: Dictionary of preprocessed pieces (original, upscaled, edges, contours, prep, binary)
         rows: Number of rows in the grid
         cols: Number of columns in the grid
         method: "greedy" or "genetic"
-        contours: Optional contour images for each piece
         similarity: Custom similarity calculator
-        **kwargs: Extra args for genetic (generations, population_size)
+        **kwargs: Extra args for genetic (generations, population_size, etc)
 
     Returns:
         List of piece indices in solved order
     """
     if method == "genetic":
-        return _solve_genetic(pieces, rows, cols, contours, similarity, **kwargs)
+        return _solve_genetic(pieces_dict, rows, cols, similarity, **kwargs)
     else:
-        return _solve_greedy(pieces, rows, cols, contours, similarity)
+        return _solve_greedy(pieces_dict, rows, cols, similarity)
 
 
 def _solve_greedy(
-    pieces: List[np.ndarray],
+    pieces_dict: dict,
     rows: int,
     cols: int,
-    contours: Optional[List[np.ndarray]] = None,
     similarity: Optional[SimilarityCalculator] = None,
 ) -> List[int]:
     """Greedy solver - places pieces one by one based on best local match."""
     import heapq
 
     sim = similarity or SimilarityCalculator()
-    n = len(pieces)
+    n = len(pieces_dict["original"])
 
     # Precompute dissimilarities
     diss_h = np.zeros((n, n))  # horizontal (left-right)
     diss_v = np.zeros((n, n))  # vertical (top-bottom)
 
     for i in range(n):
-        c1 = contours[i] if contours else None
         for j in range(n):
             if i != j:
-                c2 = contours[j] if contours else None
-                diss_h[i, j] = sim.compute(pieces[i], pieces[j], 3, c1, c2)
-                diss_v[i, j] = sim.compute(pieces[i], pieces[j], 1, c1, c2)
+                diss_h[i, j] = sim.compute(i, j, 3, pieces_dict)
+                diss_v[i, j] = sim.compute(i, j, 1, pieces_dict)
 
     # Greedy placement
     grid = np.full((rows, cols), -1, dtype=int)
@@ -112,10 +107,9 @@ def _solve_greedy(
 
 
 def _solve_genetic(
-    pieces: List[np.ndarray],
+    pieces_dict: dict,
     rows: int,
     cols: int,
-    contours: Optional[List[np.ndarray]] = None,
     similarity: Optional[SimilarityCalculator] = None,
     **kwargs,
 ) -> List[int]:
@@ -123,10 +117,9 @@ def _solve_genetic(
     from solvers.genetic import GeneticSolver
 
     solver = GeneticSolver(
-        pieces=pieces,
+        pieces_dict=pieces_dict,
         rows=rows,
         columns=cols,
-        contours=contours,
         similarity_calc=similarity,
         population_size=kwargs.get("population_size", 100),
         generations=kwargs.get("generations", 100),
