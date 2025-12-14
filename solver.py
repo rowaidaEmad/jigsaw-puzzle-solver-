@@ -1,135 +1,134 @@
+"""
+Puzzle Solver - Clean dispatcher for different solving methods.
+"""
+
 import numpy as np
-from itertools import permutations
-from typing import List, Optional, Callable
-import heapq
+from typing import List, Optional
 
 from similarity import SimilarityCalculator
 
 
-class PuzzleSolver:
-    def __init__(
-        self,
-        pieces: List[np.ndarray],
-        grid_size: int,
-        contours: Optional[List[np.ndarray]] = None,
-        similarity_calc: Optional[SimilarityCalculator] = None,
-    ):
-        self.pieces = pieces
-        self.grid_size = grid_size
-        self.num_pieces = len(pieces)
-        self.contours = contours
-        self.similarity = similarity_calc or SimilarityCalculator()
-
-        self.diss_v = np.zeros((self.num_pieces, self.num_pieces))
-        self.diss_h = np.zeros((self.num_pieces, self.num_pieces))
-        self._compute_dissimilarities()
-
-    def _compute_dissimilarities(self):
-        for i in range(self.num_pieces):
-            c1 = self.contours[i] if self.contours else None
-            for j in range(self.num_pieces):
-                if i != j:
-                    c2 = self.contours[j] if self.contours else None
-                    self.diss_v[i, j] = self.similarity.compute(
-                        self.pieces[i], self.pieces[j], 1, c1, c2
-                    )
-                    self.diss_h[i, j] = self.similarity.compute(
-                        self.pieces[i], self.pieces[j], 3, c1, c2
-                    )
-
-    def solve(self) -> List[int]:
-        grid = np.full((self.grid_size, self.grid_size), -1, dtype=int)
-        used = set()
-
-        grid[0, 0] = 0
-        used.add(0)
-
-        pq = []
-
-        for r in range(self.grid_size):
-            for c in range(self.grid_size):
-                if grid[r, c] == -1:
-                    continue
-
-                placed = grid[r, c]
-
-                if r + 1 < self.grid_size and grid[r + 1, c] == -1:
-                    for p in range(self.num_pieces):
-                        if p not in used:
-                            score = self.diss_v[placed, p]
-                            heapq.heappush(pq, (score, p, r + 1, c))
-
-                if c + 1 < self.grid_size and grid[r, c + 1] == -1:
-                    for p in range(self.num_pieces):
-                        if p not in used:
-                            score = self.diss_h[placed, p]
-                            heapq.heappush(pq, (score, p, r, c + 1))
-
-        while pq and len(used) < self.num_pieces:
-            score, piece, r, c = heapq.heappop(pq)
-
-            if piece in used or grid[r, c] != -1:
-                continue
-
-            grid[r, c] = piece
-            used.add(piece)
-
-            if r + 1 < self.grid_size and grid[r + 1, c] == -1:
-                for p in range(self.num_pieces):
-                    if p not in used:
-                        heapq.heappush(pq, (self.diss_v[piece, p], p, r + 1, c))
-
-            if c + 1 < self.grid_size and grid[r, c + 1] == -1:
-                for p in range(self.num_pieces):
-                    if p not in used:
-                        heapq.heappush(pq, (self.diss_h[piece, p], p, r, c + 1))
-
-        result = []
-        for r in range(self.grid_size):
-            for c in range(self.grid_size):
-                if grid[r, c] != -1:
-                    result.append(grid[r, c])
-                else:
-                    unused = [i for i in range(self.num_pieces) if i not in used]
-                    result.append(unused[0] if unused else 0)
-                    if unused:
-                        used.add(unused[0])
-
-        return result
-
-
-def solve_brute_force(
+def solve(
     pieces: List[np.ndarray],
-    grid_size: int,
-    dissimilarity_fn: Optional[Callable] = None,
+    rows: int,
+    cols: int,
+    method: str = "genetic",
+    contours: Optional[List[np.ndarray]] = None,
+    similarity: Optional[SimilarityCalculator] = None,
+    **kwargs,
 ) -> List[int]:
-    dissimilarity_fn = dissimilarity_fn or mgc_dissimilarity
-    num_pieces = grid_size * grid_size
+    """
+    Solve a jigsaw puzzle.
 
-    def score(arr):
-        total = 0.0
-        for i in range(grid_size):
-            for j in range(grid_size):
-                idx = i * grid_size + j
-                if j < grid_size - 1:
-                    total += dissimilarity_fn(
-                        pieces[arr[idx]], pieces[arr[idx + 1]], "horizontal"
-                    )
-                if i < grid_size - 1:
-                    total += dissimilarity_fn(
-                        pieces[arr[idx]], pieces[arr[idx + grid_size]], "vertical"
-                    )
-        return total
+    Args:
+        pieces: List of piece images
+        rows: Number of rows in the grid
+        cols: Number of columns in the grid
+        method: "greedy" or "genetic"
+        contours: Optional contour images for each piece
+        similarity: Custom similarity calculator
+        **kwargs: Extra args for genetic (generations, population_size)
 
-    best = min(permutations(range(num_pieces)), key=score)
-    return list(best)
-
-
-def solve_puzzle(
-    pieces: List[np.ndarray], grid_size: int, method: str = "greedy"
-) -> List[int]:
-    if method == "brute_force":
-        return solve_brute_force(pieces, grid_size)
+    Returns:
+        List of piece indices in solved order
+    """
+    if method == "genetic":
+        return _solve_genetic(pieces, rows, cols, contours, similarity, **kwargs)
     else:
-        solver = PuzzleSolver(pieces, grid_size)
-        return solver.solve()
+        return _solve_greedy(pieces, rows, cols, contours, similarity)
+
+
+def _solve_greedy(
+    pieces: List[np.ndarray],
+    rows: int,
+    cols: int,
+    contours: Optional[List[np.ndarray]] = None,
+    similarity: Optional[SimilarityCalculator] = None,
+) -> List[int]:
+    """Greedy solver - places pieces one by one based on best local match."""
+    import heapq
+
+    sim = similarity or SimilarityCalculator()
+    n = len(pieces)
+
+    # Precompute dissimilarities
+    diss_h = np.zeros((n, n))  # horizontal (left-right)
+    diss_v = np.zeros((n, n))  # vertical (top-bottom)
+
+    for i in range(n):
+        c1 = contours[i] if contours else None
+        for j in range(n):
+            if i != j:
+                c2 = contours[j] if contours else None
+                diss_h[i, j] = sim.compute(pieces[i], pieces[j], 3, c1, c2)
+                diss_v[i, j] = sim.compute(pieces[i], pieces[j], 1, c1, c2)
+
+    # Greedy placement
+    grid = np.full((rows, cols), -1, dtype=int)
+    used = set()
+    pq = []
+
+    # Start with piece 0 at (0,0)
+    grid[0, 0] = 0
+    used.add(0)
+
+    # Add candidates for neighbors of (0,0)
+    def add_neighbors(r, c, placed):
+        if r + 1 < rows and grid[r + 1, c] == -1:
+            for p in range(n):
+                if p not in used:
+                    heapq.heappush(pq, (diss_v[placed, p], p, r + 1, c))
+        if c + 1 < cols and grid[r, c + 1] == -1:
+            for p in range(n):
+                if p not in used:
+                    heapq.heappush(pq, (diss_h[placed, p], p, r, c + 1))
+
+    add_neighbors(0, 0, 0)
+
+    while pq and len(used) < n:
+        _, piece, r, c = heapq.heappop(pq)
+        if piece in used or grid[r, c] != -1:
+            continue
+
+        grid[r, c] = piece
+        used.add(piece)
+        add_neighbors(r, c, piece)
+
+    # Fill any remaining gaps
+    result = []
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r, c] != -1:
+                result.append(grid[r, c])
+            else:
+                unused = [i for i in range(n) if i not in used]
+                if unused:
+                    result.append(unused[0])
+                    used.add(unused[0])
+                else:
+                    result.append(0)
+
+    return result
+
+
+def _solve_genetic(
+    pieces: List[np.ndarray],
+    rows: int,
+    cols: int,
+    contours: Optional[List[np.ndarray]] = None,
+    similarity: Optional[SimilarityCalculator] = None,
+    **kwargs,
+) -> List[int]:
+    """Genetic algorithm solver."""
+    from genetic import GeneticSolver
+
+    solver = GeneticSolver(
+        pieces=pieces,
+        rows=rows,
+        columns=cols,
+        contours=contours,
+        similarity_calc=similarity,
+        population_size=kwargs.get("population_size", 100),
+        generations=kwargs.get("generations", 100),
+    )
+    return solver.solve()

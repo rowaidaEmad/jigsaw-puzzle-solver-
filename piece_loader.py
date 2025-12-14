@@ -46,12 +46,12 @@ class PieceLoader:
         return sorted(ids)
 
     def _get_piece_path(self, folder: str, puzzle_id: int, row: int, col: int) -> str:
-        return str(self.tiles_dir / folder / f"puzzle_{puzzle_id:03d}_r{row}_c{col}.png")
+        return str(
+            self.tiles_dir / folder / f"puzzle_{puzzle_id:03d}_r{row}_c{col}.png"
+        )
 
     def load_puzzle_pieces(
-        self,
-        puzzle_id: int,
-        piece_type: str = "original"
+        self, puzzle_id: int, piece_type: str = "original"
     ) -> List[np.ndarray]:
         """
         Load all pieces for a puzzle.
@@ -68,19 +68,14 @@ class PieceLoader:
         return pieces
 
     def load_with_contours(
-        self,
-        puzzle_id: int,
-        piece_type: str = "original"
+        self, puzzle_id: int, piece_type: str = "original"
     ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """Load pieces and their contour versions."""
         pieces = self.load_puzzle_pieces(puzzle_id, piece_type)
         contours = self.load_puzzle_pieces(puzzle_id, "contours")
         return pieces, contours
 
-    def load_all_types(
-        self,
-        puzzle_id: int
-    ) -> Dict[str, List[np.ndarray]]:
+    def load_all_types(self, puzzle_id: int) -> Dict[str, List[np.ndarray]]:
         """Load all available piece types for a puzzle."""
         types = {}
         for t in ["original", "prep", "upscaled", "binary", "edges", "contours"]:
@@ -94,9 +89,7 @@ class PieceLoader:
 
 
 def load_puzzle_from_output(
-    output_dir: str,
-    puzzle_id: int,
-    grid_size: str = "4x4"
+    output_dir: str, puzzle_id: int, grid_size: str = "4x4"
 ) -> Tuple[List[np.ndarray], Optional[List[np.ndarray]]]:
     """
     Convenience function to load a puzzle from output folder.

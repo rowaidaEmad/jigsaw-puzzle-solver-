@@ -1,99 +1,87 @@
+"""
+Similarity Functions for Jigsaw Puzzle Solving
+
+Each function takes two pieces and an orientation, returns a dissimilarity score.
+Lower score = better match.
+
+Orientation: 0=top, 1=bottom, 2=left, 3=right
+(where p2 is placed relative to p1)
+"""
+
 import cv2
 import numpy as np
-from typing import Tuple, Optional
-
-
-def get_edge(piece: np.ndarray, orientation: int) -> np.ndarray:
-    """
-    Get edge pixels from a piece.
-    orientation: 0=top, 1=bottom, 2=left, 3=right
-    """
-    if orientation == 0:
-        return piece[0, :, :]
-    elif orientation == 1:
-        return piece[-1, :, :]
-    elif orientation == 2:
-        return piece[:, 0, :]
-    elif orientation == 3:
-        return piece[:, -1, :]
-    raise ValueError(f"Invalid orientation: {orientation}")
+from typing import Optional
 
 
 def rgb_to_lab(image: np.ndarray) -> np.ndarray:
+    """Convert RGB image to LAB color space."""
     if len(image.shape) == 2:
         return image.astype(np.float32)
     bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
-    return lab.astype(np.float32)
+    return cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB).astype(np.float32)
 
 
-# --- Individual Similarity Functions ---
+def to_gray(image: np.ndarray) -> np.ndarray:
+    """Convert to grayscale if needed."""
+    if len(image.shape) == 3:
+        return cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    return image
+
+
+# --- Similarity Functions ---
 
 def color_ssd(
-    piece1: np.ndarray,
-    piece2: np.ndarray,
+    p1: np.ndarray,
+    p2: np.ndarray,
     orientation: int,
     use_lab: bool = True,
-    depth: int = 1
+    depth: int = 1,
 ) -> float:
     """
     Sum of squared differences between adjacent edges.
-    depth: how many rows/cols to compare (1 = edge only)
+    
+    Args:
+        depth: How many rows/cols to compare (1 = edge only)
     """
     if use_lab:
-        p1 = rgb_to_lab(piece1)
-        p2 = rgb_to_lab(piece2)
+        p1, p2 = rgb_to_lab(p1), rgb_to_lab(p2)
     else:
-        p1 = piece1.astype(np.float32)
-        p2 = piece2.astype(np.float32)
+        p1, p2 = p1.astype(np.float32), p2.astype(np.float32)
 
     total = 0.0
     for d in range(depth):
-        weight = 1.0 / (d + 1)
-        if orientation == 0:  # p2 above p1
-            e1 = p1[d, :, :]
-            e2 = p2[-(d + 1), :, :]
+        w = 1.0 / (d + 1)
+        if orientation == 0:    # p2 above p1
+            e1, e2 = p1[d, :], p2[-(d+1), :]
         elif orientation == 1:  # p2 below p1
-            e1 = p1[-(d + 1), :, :]
-            e2 = p2[d, :, :]
+            e1, e2 = p1[-(d+1), :], p2[d, :]
         elif orientation == 2:  # p2 left of p1
-            e1 = p1[:, d, :]
-            e2 = p2[:, -(d + 1), :]
-        elif orientation == 3:  # p2 right of p1
-            e1 = p1[:, -(d + 1), :]
-            e2 = p2[:, d, :]
-        else:
-            raise ValueError(f"Invalid orientation: {orientation}")
-        diff = e1 - e2
-        total += weight * float(np.sum(diff ** 2))
-    return float(total)
+            e1, e2 = p1[:, d], p2[:, -(d+1)]
+        else:                   # p2 right of p1
+            e1, e2 = p1[:, -(d+1)], p2[:, d]
+        total += w * float(np.sum((e1 - e2) ** 2))
+    return total
 
 
-def gradient_compatibility(
-    piece1: np.ndarray,
-    piece2: np.ndarray,
-    orientation: int
-) -> float:
+def gradient_compatibility(p1: np.ndarray, p2: np.ndarray, orientation: int) -> float:
     """
-    Mahalanobis Gradient Compatibility - predicts continuation of gradients.
+    Mahalanobis Gradient Compatibility.
+    Predicts continuation of gradients across the boundary.
     """
-    p1 = rgb_to_lab(piece1)
-    p2 = rgb_to_lab(piece2)
+    p1, p2 = rgb_to_lab(p1), rgb_to_lab(p2)
 
     if orientation == 0:
-        p1_inner, p1_edge = p1[1, :, :], p1[0, :, :]
-        p2_edge, p2_inner = p2[-1, :, :], p2[-2, :, :]
+        p1_inner, p1_edge = p1[1, :], p1[0, :]
+        p2_edge, p2_inner = p2[-1, :], p2[-2, :]
     elif orientation == 1:
-        p1_inner, p1_edge = p1[-2, :, :], p1[-1, :, :]
-        p2_edge, p2_inner = p2[0, :, :], p2[1, :, :]
+        p1_inner, p1_edge = p1[-2, :], p1[-1, :]
+        p2_edge, p2_inner = p2[0, :], p2[1, :]
     elif orientation == 2:
-        p1_inner, p1_edge = p1[:, 1, :], p1[:, 0, :]
-        p2_edge, p2_inner = p2[:, -1, :], p2[:, -2, :]
-    elif orientation == 3:
-        p1_inner, p1_edge = p1[:, -2, :], p1[:, -1, :]
-        p2_edge, p2_inner = p2[:, 0, :], p2[:, 1, :]
+        p1_inner, p1_edge = p1[:, 1], p1[:, 0]
+        p2_edge, p2_inner = p2[:, -1], p2[:, -2]
     else:
-        raise ValueError(f"Invalid orientation: {orientation}")
+        p1_inner, p1_edge = p1[:, -2], p1[:, -1]
+        p2_edge, p2_inner = p2[:, 0], p2[:, 1]
 
     grad1 = p1_edge - p1_inner
     grad2 = p2_inner - p2_edge
@@ -102,138 +90,110 @@ def gradient_compatibility(
 
     err1 = pred_p2 - p2_edge
     err2 = pred_p1 - p1_edge
-    return float(np.sum(err1 ** 2) + np.sum(err2 ** 2))
+    return float(np.sum(err1**2) + np.sum(err2**2))
 
 
 def histogram_similarity(
-    piece1: np.ndarray,
-    piece2: np.ndarray,
+    p1: np.ndarray,
+    p2: np.ndarray,
     orientation: int,
     bins: int = 32,
-    edge_depth: int = 3
+    edge_depth: int = 3,
 ) -> float:
-    """
-    Compare color histograms of edge regions.
-    Returns dissimilarity (lower = more similar).
-    """
+    """Compare color histograms of edge regions."""
     if orientation == 0:
-        region1 = piece1[:edge_depth, :, :]
-        region2 = piece2[-edge_depth:, :, :]
+        r1, r2 = p1[:edge_depth, :], p2[-edge_depth:, :]
     elif orientation == 1:
-        region1 = piece1[-edge_depth:, :, :]
-        region2 = piece2[:edge_depth, :, :]
+        r1, r2 = p1[-edge_depth:, :], p2[:edge_depth, :]
     elif orientation == 2:
-        region1 = piece1[:, :edge_depth, :]
-        region2 = piece2[:, -edge_depth:, :]
-    elif orientation == 3:
-        region1 = piece1[:, -edge_depth:, :]
-        region2 = piece2[:, :edge_depth, :]
+        r1, r2 = p1[:, :edge_depth], p2[:, -edge_depth:]
     else:
-        raise ValueError(f"Invalid orientation: {orientation}")
+        r1, r2 = p1[:, -edge_depth:], p2[:, :edge_depth]
 
-    total_dist = 0.0
+    total = 0.0
     for c in range(3):
-        h1, _ = np.histogram(region1[:, :, c].flatten(), bins=bins, range=(0, 256))
-        h2, _ = np.histogram(region2[:, :, c].flatten(), bins=bins, range=(0, 256))
-        h1 = h1.astype(np.float32)
-        h2 = h2.astype(np.float32)
-        h1 /= h1.sum() + 1e-10
-        h2 /= h2.sum() + 1e-10
-        total_dist += cv2.compareHist(h1, h2, cv2.HISTCMP_CHISQR)
-    return total_dist
+        h1, _ = np.histogram(r1[:, :, c].flatten(), bins=bins, range=(0, 256))
+        h2, _ = np.histogram(r2[:, :, c].flatten(), bins=bins, range=(0, 256))
+        h1 = h1.astype(np.float32).reshape(-1)
+        h2 = h2.astype(np.float32).reshape(-1)
+        h1 /= (h1.sum() + 1e-10)
+        h2 /= (h2.sum() + 1e-10)
+        total += float(cv2.compareHist(h1, h2, cv2.HISTCMP_CHISQR))
+    return total
 
 
-def edge_gradient_similarity(
-    piece1: np.ndarray,
-    piece2: np.ndarray,
-    orientation: int
-) -> float:
-    """
-    Compare edge gradients using Sobel operator.
-    """
-    gray1 = cv2.cvtColor(piece1, cv2.COLOR_RGB2GRAY) if len(piece1.shape) == 3 else piece1
-    gray2 = cv2.cvtColor(piece2, cv2.COLOR_RGB2GRAY) if len(piece2.shape) == 3 else piece2
+def edge_gradient(p1: np.ndarray, p2: np.ndarray, orientation: int) -> float:
+    """Compare edge gradients using Sobel operator."""
+    g1, g2 = to_gray(p1), to_gray(p2)
 
     if orientation in [0, 1]:
-        sobel1 = cv2.Sobel(gray1, cv2.CV_64F, 0, 1, ksize=3)
-        sobel2 = cv2.Sobel(gray2, cv2.CV_64F, 0, 1, ksize=3)
-        if orientation == 0:
-            e1, e2 = sobel1[0, :], sobel2[-1, :]
-        else:
-            e1, e2 = sobel1[-1, :], sobel2[0, :]
+        s1 = cv2.Sobel(g1, cv2.CV_64F, 0, 1, ksize=3)
+        s2 = cv2.Sobel(g2, cv2.CV_64F, 0, 1, ksize=3)
+        e1 = s1[0, :] if orientation == 0 else s1[-1, :]
+        e2 = s2[-1, :] if orientation == 0 else s2[0, :]
     else:
-        sobel1 = cv2.Sobel(gray1, cv2.CV_64F, 1, 0, ksize=3)
-        sobel2 = cv2.Sobel(gray2, cv2.CV_64F, 1, 0, ksize=3)
-        if orientation == 2:
-            e1, e2 = sobel1[:, 0], sobel2[:, -1]
-        else:
-            e1, e2 = sobel1[:, -1], sobel2[:, 0]
+        s1 = cv2.Sobel(g1, cv2.CV_64F, 1, 0, ksize=3)
+        s2 = cv2.Sobel(g2, cv2.CV_64F, 1, 0, ksize=3)
+        e1 = s1[:, 0] if orientation == 2 else s1[:, -1]
+        e2 = s2[:, -1] if orientation == 2 else s2[:, 0]
 
     return float(np.sum((e1 - e2) ** 2))
 
 
-def contour_similarity(
-    contour1: Optional[np.ndarray],
-    contour2: Optional[np.ndarray],
-    orientation: int
+def contour_match(
+    c1: Optional[np.ndarray],
+    c2: Optional[np.ndarray],
+    orientation: int,
 ) -> float:
-    """
-    Compare contour images at edges.
-    Pass pre-computed contour images.
-    """
-    if contour1 is None or contour2 is None:
+    """Compare contour images at edges."""
+    if c1 is None or c2 is None:
         return 0.0
 
     if orientation == 0:
-        e1, e2 = contour1[0, :], contour2[-1, :]
+        e1, e2 = c1[0, :], c2[-1, :]
     elif orientation == 1:
-        e1, e2 = contour1[-1, :], contour2[0, :]
+        e1, e2 = c1[-1, :], c2[0, :]
     elif orientation == 2:
-        e1, e2 = contour1[:, 0], contour2[:, -1]
-    elif orientation == 3:
-        e1, e2 = contour1[:, -1], contour2[:, 0]
+        e1, e2 = c1[:, 0], c2[:, -1]
     else:
-        raise ValueError(f"Invalid orientation: {orientation}")
+        e1, e2 = c1[:, -1], c2[:, 0]
 
-    e1 = e1.astype(np.float32)
-    e2 = e2.astype(np.float32)
-    return float(np.sum((e1 - e2) ** 2))
+    return float(np.sum((e1.astype(np.float32) - e2.astype(np.float32)) ** 2))
 
 
-def texture_similarity(
-    piece1: np.ndarray,
-    piece2: np.ndarray,
-    orientation: int,
-    edge_depth: int = 5
-) -> float:
-    """
-    Compare texture using local binary patterns approximation.
-    """
-    gray1 = cv2.cvtColor(piece1, cv2.COLOR_RGB2GRAY) if len(piece1.shape) == 3 else piece1
-    gray2 = cv2.cvtColor(piece2, cv2.COLOR_RGB2GRAY) if len(piece2.shape) == 3 else piece2
+def texture_match(p1: np.ndarray, p2: np.ndarray, orientation: int, depth: int = 5) -> float:
+    """Compare texture using Laplacian variance."""
+    g1, g2 = to_gray(p1), to_gray(p2)
 
     if orientation == 0:
-        r1, r2 = gray1[:edge_depth, :], gray2[-edge_depth:, :]
+        r1, r2 = g1[:depth, :], g2[-depth:, :]
     elif orientation == 1:
-        r1, r2 = gray1[-edge_depth:, :], gray2[:edge_depth, :]
+        r1, r2 = g1[-depth:, :], g2[:depth, :]
     elif orientation == 2:
-        r1, r2 = gray1[:, :edge_depth], gray2[:, -edge_depth:]
-    elif orientation == 3:
-        r1, r2 = gray1[:, -edge_depth:], gray2[:, :edge_depth]
+        r1, r2 = g1[:, :depth], g2[:, -depth:]
     else:
-        raise ValueError(f"Invalid orientation: {orientation}")
+        r1, r2 = g1[:, -depth:], g2[:, :depth]
 
-    lap1 = cv2.Laplacian(r1, cv2.CV_64F)
-    lap2 = cv2.Laplacian(r2, cv2.CV_64F)
-
-    var1 = np.var(lap1)
-    var2 = np.var(lap2)
+    var1 = np.var(cv2.Laplacian(r1, cv2.CV_64F))
+    var2 = np.var(cv2.Laplacian(r2, cv2.CV_64F))
     return float(abs(var1 - var2))
 
 
-# --- Combined Similarity Function ---
+# --- Combined Calculator ---
 
 class SimilarityCalculator:
+    """
+    Weighted combination of similarity functions.
+    
+    Adjust weights to emphasize different features:
+        - color: Basic color matching at edges
+        - gradient: Gradient continuation prediction
+        - histogram: Color distribution matching
+        - edge: Edge gradient matching
+        - contour: Contour image matching
+        - texture: Texture variance matching
+    """
+
     def __init__(
         self,
         weight_color: float = 1.0,
@@ -242,76 +202,45 @@ class SimilarityCalculator:
         weight_edge: float = 0.3,
         weight_contour: float = 0.2,
         weight_texture: float = 0.1,
+        color_depth: int = 2,
         use_lab: bool = True,
-        color_depth: int = 2
     ):
-        self.weight_color = weight_color
-        self.weight_gradient = weight_gradient
-        self.weight_histogram = weight_histogram
-        self.weight_edge = weight_edge
-        self.weight_contour = weight_contour
-        self.weight_texture = weight_texture
-        self.use_lab = use_lab
+        self.w_color = weight_color
+        self.w_gradient = weight_gradient
+        self.w_histogram = weight_histogram
+        self.w_edge = weight_edge
+        self.w_contour = weight_contour
+        self.w_texture = weight_texture
         self.color_depth = color_depth
+        self.use_lab = use_lab
 
     def compute(
         self,
-        piece1: np.ndarray,
-        piece2: np.ndarray,
+        p1: np.ndarray,
+        p2: np.ndarray,
         orientation: int,
-        contour1: Optional[np.ndarray] = None,
-        contour2: Optional[np.ndarray] = None
+        c1: Optional[np.ndarray] = None,
+        c2: Optional[np.ndarray] = None,
     ) -> float:
-        """
-        Compute combined dissimilarity score.
-        Lower score = better match.
-        """
+        """Compute combined dissimilarity. Lower = better match."""
         total = 0.0
 
-        if self.weight_color > 0:
-            total += self.weight_color * color_ssd(
-                piece1, piece2, orientation,
-                use_lab=self.use_lab, depth=self.color_depth
-            )
+        if self.w_color > 0:
+            total += self.w_color * color_ssd(p1, p2, orientation, self.use_lab, self.color_depth)
 
-        if self.weight_gradient > 0:
-            total += self.weight_gradient * gradient_compatibility(
-                piece1, piece2, orientation
-            )
+        if self.w_gradient > 0:
+            total += self.w_gradient * gradient_compatibility(p1, p2, orientation)
 
-        if self.weight_histogram > 0:
-            total += self.weight_histogram * histogram_similarity(
-                piece1, piece2, orientation
-            )
+        if self.w_histogram > 0:
+            total += self.w_histogram * histogram_similarity(p1, p2, orientation)
 
-        if self.weight_edge > 0:
-            total += self.weight_edge * edge_gradient_similarity(
-                piece1, piece2, orientation
-            )
+        if self.w_edge > 0:
+            total += self.w_edge * edge_gradient(p1, p2, orientation)
 
-        if self.weight_contour > 0 and contour1 is not None and contour2 is not None:
-            total += self.weight_contour * contour_similarity(
-                contour1, contour2, orientation
-            )
+        if self.w_contour > 0 and c1 is not None and c2 is not None:
+            total += self.w_contour * contour_match(c1, c2, orientation)
 
-        if self.weight_texture > 0:
-            total += self.weight_texture * texture_similarity(
-                piece1, piece2, orientation
-            )
+        if self.w_texture > 0:
+            total += self.w_texture * texture_match(p1, p2, orientation)
 
         return total
-
-
-def dissimilarity(
-    piece1: np.ndarray,
-    piece2: np.ndarray,
-    orientation: int,
-    contour1: Optional[np.ndarray] = None,
-    contour2: Optional[np.ndarray] = None
-) -> float:
-    """
-    Default dissimilarity function with preset weights.
-    orientation: 0=top, 1=bottom, 2=left, 3=right
-    """
-    calc = SimilarityCalculator()
-    return calc.compute(piece1, piece2, orientation, contour1, contour2)
