@@ -36,23 +36,26 @@ def solve_single(
     """Solve one puzzle using all available preprocessed data."""
 
     try:
-        # Load pieces with contours
-        pieces, contours = loader.load_with_contours(puzzle_id, piece_type="original")
+        # Load ALL preprocessed types
+        pieces_dict = loader.load_all_types(puzzle_id)
+
+        if "original" not in pieces_dict:
+            raise ValueError(f"Missing original pieces for puzzle {puzzle_id}")
+
         rows, cols = loader.rows, loader.cols
 
-        # Solve
+        # Solve using all preprocessed types
         arrangement = solve(
-            pieces=pieces,
+            pieces_dict=pieces_dict,
             rows=rows,
             cols=cols,
             method=method,
-            contours=contours,
             similarity=similarity_calc,
             **solver_kwargs,
         )
 
-        # Merge and save
-        result = merge_pieces(pieces, arrangement, rows)
+        # Reconstruct final image using ORIGINAL pieces
+        result = merge_pieces(pieces_dict["original"], arrangement, rows)
         save_image(result, str(output_path))
         return True
 
@@ -168,14 +171,6 @@ def main():
         "--weight-texture", type=float, default=0.1, help="Texture similarity weight"
     )
 
-    # Color/depth options
-    parser.add_argument(
-        "--color-depth", type=int, default=2, help="Color comparison depth (rows/cols)"
-    )
-    parser.add_argument(
-        "--no-lab", action="store_true", help="Use RGB instead of LAB color space"
-    )
-
     args = parser.parse_args()
 
     # Setup
@@ -208,6 +203,7 @@ def main():
         return
 
     # Create similarity calculator with custom weights
+    # Internal configs (depth values, color space) are set at top of utils/similarity.py
     similarity_calc = SimilarityCalculator(
         weight_color=args.weight_color,
         weight_gradient=args.weight_gradient,
@@ -215,8 +211,6 @@ def main():
         weight_edge=args.weight_edge,
         weight_contour=args.weight_contour,
         weight_texture=args.weight_texture,
-        color_depth=args.color_depth,
-        use_lab=not args.no_lab,
     )
 
     # Solver kwargs
@@ -245,7 +239,6 @@ def main():
     print(f"  Edge:      {args.weight_edge}")
     print(f"  Contour:   {args.weight_contour}")
     print(f"  Texture:   {args.weight_texture}")
-    print(f"  Color depth: {args.color_depth}, LAB: {not args.no_lab}")
     print()
 
     # Determine puzzles to solve
