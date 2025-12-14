@@ -22,6 +22,7 @@ python3 preprocess_puzzles.py -i data/puzzle_2x2 -o output/tiles_2x2 -g 2 --star
 ### Output Structure
 
 Creates 6 subdirectories per grid size:
+
 ```
 output/tiles_4x4/
 ├── original/     - Original split pieces
@@ -71,14 +72,14 @@ python3 solve_from_preprocessed.py -d output/tiles_4x4 -o results --puzzle-id 5 
 
 ### Similarity Weights (tunable)
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--weight-color` | 1.0 | Color SSD (edge matching) |
-| `--weight-gradient` | 0.5 | Gradient compatibility (MGC) |
-| `--weight-histogram` | 0.2 | Color histogram similarity |
-| `--weight-edge` | 0.3 | Sobel edge gradients |
-| `--weight-contour` | 0.2 | Contour image matching |
-| `--weight-texture` | 0.1 | Laplacian texture variance |
+| Flag                 | Default | Description                  |
+| -------------------- | ------- | ---------------------------- |
+| `--weight-color`     | 1.0     | Color SSD (edge matching)    |
+| `--weight-gradient`  | 0.5     | Gradient compatibility (MGC) |
+| `--weight-histogram` | 0.2     | Color histogram similarity   |
+| `--weight-edge`      | 0.3     | Sobel edge gradients         |
+| `--weight-contour`   | 0.2     | Contour image matching       |
+| `--weight-texture`   | 0.1     | Laplacian texture variance   |
 
 ### Other Options
 
@@ -113,11 +114,13 @@ ls results_contour/
 ## Tips
 
 ### Preprocessing
+
 - Takes ~0.5s per 4x4 puzzle, ~2s per 8x8 puzzle
 - Disk usage: ~200-500KB per piece depending on grid size
 - Run once, solve many times with different weights
 
 ### Solving
+
 - **Greedy**: Fast (< 1s), good for testing weights
 - **Genetic**: Better quality (1-5s), tune generations for accuracy vs speed
 - Increase `--weight-color` for cleaner edges
@@ -125,6 +128,7 @@ ls results_contour/
 - Use `--color-depth 3` for more robust edge matching
 
 ### Weight Tuning Strategy
+
 1. Start with defaults
 2. Identify weak matches (check results visually)
 3. Increase weights for features that matter (e.g., color for similar textures)

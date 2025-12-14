@@ -53,9 +53,3 @@ def merge_pieces(
         x_end = x_start + piece_size
         result[y_start:y_end, x_start:x_end] = pieces[piece_idx]
     return result
-
-
-def get_image_dimensions(image: np.ndarray) -> Tuple[int, int, int]:
-    if len(image.shape) == 2:
-        return image.shape[0], image.shape[1], 1
-    return image.shape[0], image.shape[1], image.shape[2]
