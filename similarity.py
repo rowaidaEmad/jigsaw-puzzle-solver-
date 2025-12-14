@@ -30,6 +30,7 @@ def to_gray(image: np.ndarray) -> np.ndarray:
 
 # --- Similarity Functions ---
 
+
 def color_ssd(
     p1: np.ndarray,
     p2: np.ndarray,
@@ -39,7 +40,7 @@ def color_ssd(
 ) -> float:
     """
     Sum of squared differences between adjacent edges.
-    
+
     Args:
         depth: How many rows/cols to compare (1 = edge only)
     """
@@ -51,14 +52,14 @@ def color_ssd(
     total = 0.0
     for d in range(depth):
         w = 1.0 / (d + 1)
-        if orientation == 0:    # p2 above p1
-            e1, e2 = p1[d, :], p2[-(d+1), :]
+        if orientation == 0:  # p2 above p1
+            e1, e2 = p1[d, :], p2[-(d + 1), :]
         elif orientation == 1:  # p2 below p1
-            e1, e2 = p1[-(d+1), :], p2[d, :]
+            e1, e2 = p1[-(d + 1), :], p2[d, :]
         elif orientation == 2:  # p2 left of p1
-            e1, e2 = p1[:, d], p2[:, -(d+1)]
-        else:                   # p2 right of p1
-            e1, e2 = p1[:, -(d+1)], p2[:, d]
+            e1, e2 = p1[:, d], p2[:, -(d + 1)]
+        else:  # p2 right of p1
+            e1, e2 = p1[:, -(d + 1)], p2[:, d]
         total += w * float(np.sum((e1 - e2) ** 2))
     return total
 
@@ -116,8 +117,8 @@ def histogram_similarity(
         h2, _ = np.histogram(r2[:, :, c].flatten(), bins=bins, range=(0, 256))
         h1 = h1.astype(np.float32).reshape(-1)
         h2 = h2.astype(np.float32).reshape(-1)
-        h1 /= (h1.sum() + 1e-10)
-        h2 /= (h2.sum() + 1e-10)
+        h1 /= h1.sum() + 1e-10
+        h2 /= h2.sum() + 1e-10
         total += float(cv2.compareHist(h1, h2, cv2.HISTCMP_CHISQR))
     return total
 
@@ -161,7 +162,9 @@ def contour_match(
     return float(np.sum((e1.astype(np.float32) - e2.astype(np.float32)) ** 2))
 
 
-def texture_match(p1: np.ndarray, p2: np.ndarray, orientation: int, depth: int = 5) -> float:
+def texture_match(
+    p1: np.ndarray, p2: np.ndarray, orientation: int, depth: int = 5
+) -> float:
     """Compare texture using Laplacian variance."""
     g1, g2 = to_gray(p1), to_gray(p2)
 
@@ -181,10 +184,11 @@ def texture_match(p1: np.ndarray, p2: np.ndarray, orientation: int, depth: int =
 
 # --- Combined Calculator ---
 
+
 class SimilarityCalculator:
     """
     Weighted combination of similarity functions.
-    
+
     Adjust weights to emphasize different features:
         - color: Basic color matching at edges
         - gradient: Gradient continuation prediction
@@ -226,7 +230,9 @@ class SimilarityCalculator:
         total = 0.0
 
         if self.w_color > 0:
-            total += self.w_color * color_ssd(p1, p2, orientation, self.use_lab, self.color_depth)
+            total += self.w_color * color_ssd(
+                p1, p2, orientation, self.use_lab, self.color_depth
+            )
 
         if self.w_gradient > 0:
             total += self.w_gradient * gradient_compatibility(p1, p2, orientation)

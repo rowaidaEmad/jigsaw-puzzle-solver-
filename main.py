@@ -75,7 +75,9 @@ def cmd_batch(args):
                 image = load_image(str(input_path))
                 pieces = split_image(image, piece_size)
                 order = solve(
-                    pieces, grid, grid,
+                    pieces,
+                    grid,
+                    grid,
                     method=args.method,
                     generations=args.generations,
                     population_size=args.population,
@@ -107,7 +109,9 @@ def cmd_preprocessed(args):
             rows, cols = loader.rows, loader.cols
 
             order = solve(
-                pieces, rows, cols,
+                pieces,
+                rows,
+                cols,
                 method=args.method,
                 contours=contours,
                 generations=args.generations,
@@ -115,7 +119,9 @@ def cmd_preprocessed(args):
             )
 
             result = merge_pieces(pieces, order, rows)
-            out_path = Path(args.result_dir) / f"{args.grid}_puzzle_{pid:03d}_solved.png"
+            out_path = (
+                Path(args.result_dir) / f"{args.grid}_puzzle_{pid:03d}_solved.png"
+            )
             out_path.parent.mkdir(parents=True, exist_ok=True)
             save_image(result, str(out_path))
             print(f"Saved: {out_path}")
@@ -132,7 +138,9 @@ def main():
     p_solve.add_argument("input", help="Input image path")
     p_solve.add_argument("-o", "--output", default="solved.png")
     p_solve.add_argument("-g", "--grid", type=int, default=4)
-    p_solve.add_argument("-m", "--method", choices=["greedy", "genetic"], default="genetic")
+    p_solve.add_argument(
+        "-m", "--method", choices=["greedy", "genetic"], default="genetic"
+    )
     p_solve.add_argument("--generations", type=int, default=100)
     p_solve.add_argument("--population", type=int, default=100)
 
@@ -140,19 +148,27 @@ def main():
     p_batch = subparsers.add_parser("batch", help="Batch process puzzle folders")
     p_batch.add_argument("-b", "--base-dir", default="data")
     p_batch.add_argument("-o", "--output-dir", default="results")
-    p_batch.add_argument("-p", "--puzzle", choices=["2x2", "4x4", "8x8", "all"], default="all")
+    p_batch.add_argument(
+        "-p", "--puzzle", choices=["2x2", "4x4", "8x8", "all"], default="all"
+    )
     p_batch.add_argument("-n", "--num-images", type=int, default=110)
-    p_batch.add_argument("-m", "--method", choices=["greedy", "genetic"], default="genetic")
+    p_batch.add_argument(
+        "-m", "--method", choices=["greedy", "genetic"], default="genetic"
+    )
     p_batch.add_argument("--generations", type=int, default=100)
     p_batch.add_argument("--population", type=int, default=100)
 
     # preprocessed: use output folder pieces
-    p_pre = subparsers.add_parser("preprocessed", help="Solve using preprocessed pieces")
+    p_pre = subparsers.add_parser(
+        "preprocessed", help="Solve using preprocessed pieces"
+    )
     p_pre.add_argument("-d", "--output-dir", default="output")
     p_pre.add_argument("-r", "--result-dir", default="results")
     p_pre.add_argument("-g", "--grid", default="4x4")
     p_pre.add_argument("--puzzle-id", type=int, default=None)
-    p_pre.add_argument("-m", "--method", choices=["greedy", "genetic"], default="genetic")
+    p_pre.add_argument(
+        "-m", "--method", choices=["greedy", "genetic"], default="genetic"
+    )
     p_pre.add_argument("--generations", type=int, default=100)
     p_pre.add_argument("--population", type=int, default=100)
 

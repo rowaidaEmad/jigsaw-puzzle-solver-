@@ -18,6 +18,7 @@ from similarity import SimilarityCalculator
 @dataclass
 class Individual:
     """A candidate puzzle solution."""
+
     rows: int
     cols: int
     pieces: List[int]
@@ -176,8 +177,10 @@ class GeneticSolver:
                 buddy = matches[0][1]
                 reverse = self.best_match[buddy][orient ^ 1]
                 if reverse and reverse[0][1] == piece:
-                    if parent1.get_neighbor(piece, orient) == buddy or \
-                       parent2.get_neighbor(piece, orient) == buddy:
+                    if (
+                        parent1.get_neighbor(piece, orient) == buddy
+                        or parent2.get_neighbor(piece, orient) == buddy
+                    ):
                         if buddy not in kernel:
                             candidates.append((-10, orig, orient, buddy, pos))
                             return
@@ -252,14 +255,16 @@ class GeneticSolver:
         self._build_best_match_table()
 
         print("Initializing population...")
-        self.population = [Individual.random(self.rows, self.cols) for _ in range(self.pop_size)]
+        self.population = [
+            Individual.random(self.rows, self.cols) for _ in range(self.pop_size)
+        ]
         self.population.sort(key=self._fitness, reverse=True)
 
         best_score = 0.0
         stagnation = 0
 
         for gen in range(self.generations):
-            elite = self.population[-self.elite_size:]
+            elite = self.population[-self.elite_size :]
             new_pop = list(elite)
 
             parents = self._select_parents(self.pop_size - self.elite_size)
