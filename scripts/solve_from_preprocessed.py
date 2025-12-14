@@ -130,6 +130,17 @@ def main():
         default=10,
         help="Local improvement swap attempts per child",
     )
+    parser.add_argument(
+        "--simple-names",
+        action="store_true",
+        help="Save solved images with simple sequential names: 0.png,1.png,...",
+    )
+    parser.add_argument(
+        "--start-index",
+        type=int,
+        default=0,
+        help="Start index when using --simple-names (default: 0)",
+    )
 
     # Similarity weights
     parser.add_argument(
@@ -262,8 +273,15 @@ def main():
 
     # Solve puzzles
     success_count = 0
+    idx = args.start_index
     for pid in tqdm(puzzle_ids, desc="Solving"):
-        output_path = output_dir / f"{grid_size}_puzzle_{pid:03d}_solved.png"
+        if args.simple_names:
+            filename = f"{idx}.png"
+            idx += 1
+        else:
+            filename = f"{grid_size}_puzzle_{pid:03d}_solved.png"
+
+        output_path = output_dir / filename
         if solve_single(
             loader, pid, output_path, args.method, similarity_calc, **solver_kwargs
         ):
