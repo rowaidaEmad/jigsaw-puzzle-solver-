@@ -130,5 +130,9 @@ def _solve_genetic(
         similarity_calc=similarity,
         population_size=kwargs.get("population_size", 100),
         generations=kwargs.get("generations", 100),
+        tournament_k=kwargs.get("tournament_k", 3),
+        mutation_rate=kwargs.get("mutation_rate", 0.05),
+        mutation_swaps=kwargs.get("mutation_swaps", 1),
+        local_iters=kwargs.get("local_iters", 10),
     )
     return solver.solve()

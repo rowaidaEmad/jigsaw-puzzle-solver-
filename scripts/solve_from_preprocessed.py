@@ -105,6 +105,31 @@ def main():
     parser.add_argument(
         "--population", type=int, default=100, help="GA population size"
     )
+    # Small, high-impact GA options
+    parser.add_argument(
+        "--tournament-k",
+        type=int,
+        default=3,
+        help="Tournament size for selection (k=1 disables)",
+    )
+    parser.add_argument(
+        "--mutation-rate",
+        type=float,
+        default=0.05,
+        help="Per-child mutation probability",
+    )
+    parser.add_argument(
+        "--mutation-swaps",
+        type=int,
+        default=1,
+        help="Number of random swaps in mutation",
+    )
+    parser.add_argument(
+        "--local-iters",
+        type=int,
+        default=10,
+        help="Local improvement swap attempts per child",
+    )
 
     # Similarity weights
     parser.add_argument(
@@ -187,6 +212,10 @@ def main():
     solver_kwargs = {
         "generations": args.generations,
         "population_size": args.population,
+        "tournament_k": args.tournament_k,
+        "mutation_rate": args.mutation_rate,
+        "mutation_swaps": args.mutation_swaps,
+        "local_iters": args.local_iters,
     }
 
     # Print configuration

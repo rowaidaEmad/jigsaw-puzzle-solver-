@@ -66,6 +66,10 @@ class GeneticSolver:
         elite_size: int = 4,
         generations: int = 100,
         similarity_calc: Optional[SimilarityCalculator] = None,
+        tournament_k: int = 3,
+        mutation_rate: float = 0.05,
+        mutation_swaps: int = 1,
+        local_iters: int = 10,
     ):
         self.pieces = pieces
         self.rows = rows
@@ -76,6 +80,11 @@ class GeneticSolver:
         self.elite_size = elite_size
         self.generations = generations
         self.sim = similarity_calc or SimilarityCalculator()
+        # New lightweight, high-impact params
+        self.tournament_k = max(1, tournament_k)
+        self.mutation_rate = float(mutation_rate)
+        self.mutation_swaps = int(mutation_swaps)
+        self.local_iters = int(local_iters)
 
         self.diss: Optional[np.ndarray] = None
         self.best_match: List[List[List[Tuple[float, int]]]] = []
@@ -132,17 +141,55 @@ class GeneticSolver:
         return ind.fitness
 
     def _select_parents(self, count: int) -> List[Tuple[Individual, Individual]]:
-        """Fitness-proportional selection."""
+        """Select parents. Use tournament selection if tournament_k > 1,
+        otherwise fall back to fitness-proportional sampling."""
+        parents = []
+        if self.tournament_k > 1:
+            k = min(self.tournament_k, len(self.population))
+
+            def pick():
+                candidates = random.sample(self.population, k)
+                return max(candidates, key=self._fitness)
+
+            for _ in range(count):
+                parents.append((pick(), pick()))
+            return parents
+
+        # Fallback: roulette-wheel
         weights = [self._fitness(ind) for ind in self.population]
         total = sum(weights)
         probs = [w / total for w in weights]
 
-        parents = []
         for _ in range(count):
             p1 = random.choices(self.population, weights=probs)[0]
             p2 = random.choices(self.population, weights=probs)[0]
             parents.append((p1, p2))
         return parents
+
+    def _mutate(self, ind: Individual) -> Individual:
+        """Simple swap mutation: perform `mutation_swaps` random swaps."""
+        pieces = ind.pieces[:]
+        for _ in range(self.mutation_swaps):
+            a, b = random.sample(range(self.n), 2)
+            pieces[a], pieces[b] = pieces[b], pieces[a]
+        return Individual(self.rows, self.cols, pieces)
+
+    def _local_optimize(self, ind: Individual, iters: int = None) -> Individual:
+        """Lightweight hill-climb: try random swaps and keep improving ones."""
+        if iters is None:
+            iters = self.local_iters
+
+        best = ind
+        best_f = self._fitness(best)
+        for _ in range(iters):
+            a, b = random.sample(range(self.n), 2)
+            new_pieces = best.pieces[:]
+            new_pieces[a], new_pieces[b] = new_pieces[b], new_pieces[a]
+            cand = Individual(self.rows, self.cols, new_pieces)
+            f = self._fitness(cand)
+            if f > best_f:
+                best, best_f = cand, f
+        return best
 
     def _crossover(self, parent1: Individual, parent2: Individual) -> Individual:
         """Kernel-growing crossover."""
@@ -264,17 +311,23 @@ class GeneticSolver:
         stagnation = 0
 
         for gen in range(self.generations):
-            elite = self.population[-self.elite_size :]
+            elite = self.population[: self.elite_size]
             new_pop = list(elite)
 
             parents = self._select_parents(self.pop_size - self.elite_size)
             for p1, p2 in parents:
-                new_pop.append(self._crossover(p1, p2))
+                child = self._crossover(p1, p2)
+                # Mutation
+                if random.random() < self.mutation_rate:
+                    child = self._mutate(child)
+                # Lightweight local improvement (keeps code small but effective)
+                child = self._local_optimize(child)
+                new_pop.append(child)
 
             self.population = new_pop
-            self.population.sort(key=self._fitness)
+            self.population.sort(key=self._fitness, reverse=True)
 
-            current = self._fitness(self.population[-1])
+            current = self._fitness(self.population[0])
             if current > best_score:
                 best_score = current
                 stagnation = 0
