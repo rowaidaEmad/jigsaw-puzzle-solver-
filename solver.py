@@ -3,7 +3,7 @@ from itertools import permutations
 from typing import List, Optional, Callable
 import heapq
 
-from dissimilarity import mgc_dissimilarity
+from similarity import SimilarityCalculator
 
 
 class PuzzleSolver:
@@ -11,12 +11,14 @@ class PuzzleSolver:
         self,
         pieces: List[np.ndarray],
         grid_size: int,
-        dissimilarity_fn: Optional[Callable] = None,
+        contours: Optional[List[np.ndarray]] = None,
+        similarity_calc: Optional[SimilarityCalculator] = None,
     ):
         self.pieces = pieces
         self.grid_size = grid_size
         self.num_pieces = len(pieces)
-        self.dissimilarity_fn = dissimilarity_fn or mgc_dissimilarity
+        self.contours = contours
+        self.similarity = similarity_calc or SimilarityCalculator()
 
         self.diss_v = np.zeros((self.num_pieces, self.num_pieces))
         self.diss_h = np.zeros((self.num_pieces, self.num_pieces))
@@ -24,13 +26,15 @@ class PuzzleSolver:
 
     def _compute_dissimilarities(self):
         for i in range(self.num_pieces):
+            c1 = self.contours[i] if self.contours else None
             for j in range(self.num_pieces):
                 if i != j:
-                    self.diss_v[i, j] = self.dissimilarity_fn(
-                        self.pieces[i], self.pieces[j], "vertical"
+                    c2 = self.contours[j] if self.contours else None
+                    self.diss_v[i, j] = self.similarity.compute(
+                        self.pieces[i], self.pieces[j], 1, c1, c2
                     )
-                    self.diss_h[i, j] = self.dissimilarity_fn(
-                        self.pieces[i], self.pieces[j], "horizontal"
+                    self.diss_h[i, j] = self.similarity.compute(
+                        self.pieces[i], self.pieces[j], 3, c1, c2
                     )
 
     def solve(self) -> List[int]:

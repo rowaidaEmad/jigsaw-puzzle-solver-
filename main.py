@@ -8,18 +8,47 @@ from tqdm import tqdm
 from image_utils import load_image, save_image, split_image, merge_pieces
 from solver import solve_puzzle
 from comparison import evaluate_accuracy
+from piece_loader import PieceLoader
 
 
 def solve_single_puzzle(
-    input_path: str, output_path: str, image_size: int, piece_size: int, method: str
+    input_path: str,
+    output_path: str,
+    image_size: int,
+    piece_size: int,
+    method: str,
+    **kwargs,
 ) -> bool:
     try:
         image = load_image(input_path)
         pieces = split_image(image, piece_size)
         grid_size = image_size // piece_size
-        arrangement = solve_puzzle(pieces, grid_size, method=method)
+        arrangement = solve_puzzle(pieces, grid_size, method=method, **kwargs)
         result = merge_pieces(pieces, arrangement, grid_size)
         save_image(result, output_path)
+        return True
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+
+def solve_from_preprocessed(
+    output_base: str,
+    puzzle_id: int,
+    grid_size: str,
+    method: str,
+    result_path: str,
+    **kwargs,
+) -> bool:
+    try:
+        loader = PieceLoader(output_base, grid_size)
+        pieces, contours = loader.load_with_contours(puzzle_id)
+        rows, cols = loader.rows, loader.cols
+        arrangement = solve_puzzle(
+            pieces, rows, method=method, contours=contours, **kwargs
+        )
+        result = merge_pieces(pieces, arrangement, rows)
+        save_image(result, result_path)
         return True
     except Exception as e:
         print(f"Error: {e}")
@@ -55,7 +84,28 @@ def main():
         "-p", "--only", type=str, choices=["2x2", "4x4", "8x8", "all"], default="all"
     )
     parser.add_argument(
-        "-m", "--method", type=str, choices=["brute_force", "greedy"], default="greedy"
+        "-m",
+        "--method",
+        type=str,
+        choices=["brute_force", "greedy", "genetic"],
+        default="genetic",
+    )
+    parser.add_argument(
+        "--from-preprocessed",
+        action="store_true",
+        help="Use preprocessed pieces from output folder",
+    )
+    parser.add_argument(
+        "--generations",
+        type=int,
+        default=100,
+        help="Number of generations for genetic algorithm",
+    )
+    parser.add_argument(
+        "--population",
+        type=int,
+        default=100,
+        help="Population size for genetic algorithm",
     )
     parser.add_argument("-e", "--evaluate", action="store_true")
     parser.add_argument("-f", "--show-failed", action="store_true")
