@@ -5,7 +5,7 @@ Puzzle Solver - Clean dispatcher for different solving methods.
 import numpy as np
 from typing import List, Optional
 
-from similarity import SimilarityCalculator
+from utils.similarity import SimilarityCalculator
 
 
 def solve(
@@ -120,7 +120,7 @@ def _solve_genetic(
     **kwargs,
 ) -> List[int]:
     """Genetic algorithm solver."""
-    from genetic import GeneticSolver
+    from solvers.genetic import GeneticSolver
 
     solver = GeneticSolver(
         pieces=pieces,

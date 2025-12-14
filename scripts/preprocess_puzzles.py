@@ -7,15 +7,21 @@ Usage:
     python preprocess_puzzles.py -i data/puzzle_8x8 -o output/tiles_8x8 -g 8 --num-images 50
 """
 
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 import argparse
 import cv2
 import numpy as np
-from pathlib import Path
 from tqdm import tqdm
 
-from image_utils import load_image, split_image
-from preprocessing import preprocess
-from upscale import upscale_lanczos_sharp
+from utils.image_utils import load_image, split_image
+from utils.preprocessing import preprocess
+from utils.upscale import upscale_lanczos_sharp
 
 
 def process_single_puzzle(

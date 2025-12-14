@@ -12,7 +12,7 @@ import numpy as np
 from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass, field
 
-from similarity import SimilarityCalculator
+from utils.similarity import SimilarityCalculator
 
 
 @dataclass

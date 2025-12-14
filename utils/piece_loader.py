@@ -13,10 +13,28 @@ def load_piece(path: str) -> np.ndarray:
 
 
 class PieceLoader:
-    def __init__(self, output_dir: str, grid_size: str = "4x4"):
-        self.output_dir = Path(output_dir)
+    def __init__(self, tiles_dir: str, grid_size: str = "4x4"):
+        """Initialize loader.
+
+        This class now treats the provided `tiles_dir` as the exact directory
+        containing the subfolders (original, prep, upscaled, binary, edges,
+        contours). It does no searching or guessing — if folders are missing it
+        raises an error. This keeps behavior explicit and predictable.
+
+        Args:
+            tiles_dir: Exact path to tiles directory (must contain required subfolders).
+            grid_size: Grid string like '4x4'.
+        """
+        self.tiles_dir = Path(tiles_dir)
         self.grid_size = grid_size
-        self.tiles_dir = self.output_dir / f"tiles_{grid_size}"
+
+        # Verify the minimal expected structure
+        required = ["original", "prep", "upscaled", "binary", "edges", "contours"]
+        missing = [d for d in required if not (self.tiles_dir / d).exists()]
+        if missing:
+            raise ValueError(
+                f"Tiles directory {self.tiles_dir} is missing expected folders: {missing}"
+            )
 
         rows, cols = map(int, grid_size.split("x"))
         self.rows = rows

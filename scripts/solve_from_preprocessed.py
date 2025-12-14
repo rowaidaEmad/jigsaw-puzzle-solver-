@@ -8,15 +8,21 @@ Usage:
     python solve_from_preprocessed.py -d output/tiles_4x4 --puzzle-id 5 --weight-color 2.0 --weight-contour 0.5
 """
 
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 import argparse
 import numpy as np
-from pathlib import Path
 from tqdm import tqdm
 
-from piece_loader import PieceLoader
-from solver import solve
-from image_utils import merge_pieces, save_image
-from similarity import SimilarityCalculator
+from utils.piece_loader import PieceLoader
+from solvers.solver import solve
+from utils.image_utils import merge_pieces, save_image
+from utils.similarity import SimilarityCalculator
 
 
 def solve_single(
@@ -66,6 +72,13 @@ def main():
         "--data-dir",
         required=True,
         help="Preprocessed data directory (e.g., output/tiles_4x4)",
+    )
+    parser.add_argument(
+        "-g",
+        "--grid-size",
+        type=int,
+        choices=[2, 4, 8],
+        help="Grid size (2, 4 or 8). If not provided, the grid will be inferred from the directory name (must contain '2x2','4x4', or '8x8').",
     )
     parser.add_argument(
         "-o",
@@ -134,19 +147,29 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Determine grid size from directory name
+    # Treat -d as the exact tiles directory; require explicit grid-size or it must be
+    # inferable from the directory name (no parent-directory guessing).
     grid_size = None
-    for g in ["2x2", "4x4", "8x8"]:
-        if g in data_dir.name:
-            grid_size = g
-            break
-    if not grid_size:
+    if args.grid_size:
+        grid_size = f"{args.grid_size}x{args.grid_size}"
+    else:
+        for g in ["2x2", "4x4", "8x8"]:
+            if g in data_dir.name:
+                grid_size = g
+                break
+    if grid_size is None:
         print(f"Error: Could not determine grid size from {data_dir.name}")
-        print("Expected directory name to contain '2x2', '4x4', or '8x8'")
+        print(
+            "Provide --grid-size or set the directory name to include '2x2','4x4' or '8x8'."
+        )
         return
 
     # Initialize loader
-    loader = PieceLoader(str(data_dir.parent), grid_size)
+    try:
+        loader = PieceLoader(str(data_dir), grid_size)
+    except Exception as e:
+        print(f"Error initializing PieceLoader: {e}")
+        return
 
     # Create similarity calculator with custom weights
     similarity_calc = SimilarityCalculator(
