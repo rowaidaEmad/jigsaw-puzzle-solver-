@@ -19,11 +19,11 @@ from typing import Optional
 
 # Color comparison depth (how many pixel rows/cols to compare at edges)
 # Higher = considers more pixels from the edge, slower but more accurate
-COLOR_DEPTH = 3
+COLOR_DEPTH = 1
 
 # Edge comparison depth (how many pixel rows/cols to sample from binary edges)
 # Higher = compares more of the edge strip, can help with noisy edges
-EDGE_DEPTH = 3
+EDGE_DEPTH = 1
 
 # Histogram comparison parameters
 HISTOGRAM_BINS = 32  # Number of bins for color histogram
@@ -36,6 +36,17 @@ TEXTURE_DEPTH = 5
 # Use LAB color space instead of RGB for color comparisons
 # LAB is perceptually uniform, often better for color matching
 USE_LAB_COLOR = True
+
+# Proximity matching configuration
+# When comparing binary edge/contour strips we also consider nearby pixels
+# within PROXIMITY_TOLERANCE. If a pixel in one strip has a nearby pixel
+# in the neighbour strip we consider that a 'match' (+1); otherwise it's a
+# 'miss' (-1). The proximity weights control how much this helps/hurts
+# the resulting dissimilarity (positive lowers dissimilarity when matches
+# dominate, negative increases when misses dominate).
+PROXIMITY_TOLERANCE = 2
+PROXIMITY_WEIGHT_EDGE = 0.5
+PROXIMITY_WEIGHT_CONTOUR = 0.5
 
 # ============================================================================
 
@@ -176,7 +187,7 @@ def contour_match(
     """Compare contour images at edges."""
     if c1 is None or c2 is None:
         return 0.0
-
+    # Extract edge vectors
     if orientation == 0:
         e1, e2 = c1[0, :], c2[-1, :]
     elif orientation == 1:
@@ -186,7 +197,44 @@ def contour_match(
     else:
         e1, e2 = c1[:, -1], c2[:, 0]
 
-    return float(np.sum((e1.astype(np.float32) - e2.astype(np.float32)) ** 2))
+    # Binarize contours (0/1)
+    b1 = (e1 > 127).astype(np.uint8)
+    b2 = (e2 > 127).astype(np.uint8)
+
+    N = b1.size
+    if N == 0:
+        return 0.0
+
+    # Baseline mismatch fraction
+    baseline_mismatch = (
+        float(np.sum(np.abs(b1.astype(np.int32) - b2.astype(np.int32)))) / N
+    )
+
+    # Proximity matching (symmetric): count positions in b1 that have a nearby 1 in b2
+    tol = PROXIMITY_TOLERANCE
+    matches = 0
+    # b1 -> b2
+    for i in range(N):
+        if b1.flat[i] == 1:
+            start = max(0, i - tol)
+            end = min(N, i + tol + 1)
+            if np.any(b2.flat[start:end] == 1):
+                matches += 1
+    # b2 -> b1
+    for i in range(N):
+        if b2.flat[i] == 1:
+            start = max(0, i - tol)
+            end = min(N, i + tol + 1)
+            if np.any(b1.flat[start:end] == 1):
+                matches += 1
+
+    total_positions = 2 * N
+    misses = total_positions - matches
+    proximity_score = (matches - misses) / max(1, total_positions)
+
+    final = baseline_mismatch - (PROXIMITY_WEIGHT_CONTOUR * proximity_score)
+    final = max(0.0, min(1.0, final))
+    return float(final)
 
 
 def texture_match(
@@ -217,16 +265,22 @@ def _is_binary_edge_image(img: np.ndarray) -> bool:
 
 
 def edge_gradient_binary(
-    p1: np.ndarray, p2: np.ndarray, orientation: int, depth: int = 1
+    p1: np.ndarray,
+    p2: np.ndarray,
+    orientation: int,
+    depth: int = 1,
+    tolerance: int = PROXIMITY_TOLERANCE,
 ) -> float:
     """
-    Compare preprocessed binary edge images directly.
-    Samples a strip of 'depth' pixels at the boundary and compares edge presence.
+    Compare preprocessed binary edge images directly with tolerance for misalignment.
+    Samples a strip of 'depth' pixels at the boundary and compares edge presence,
+    considering a tolerance window around each pixel in the neighboring image.
 
     Args:
         p1, p2: Binary edge images (0=no edge, 255=edge)
         orientation: 0=top, 1=bottom, 2=left, 3=right
         depth: How many pixel rows/cols to sample from the border
+        tolerance: Number of extra pixels to check around each neighbor pixel (default: 2)
 
     Returns:
         Fraction of mismatched edge pixels [0, 1]
@@ -234,28 +288,103 @@ def edge_gradient_binary(
     g1, g2 = to_gray(p1), to_gray(p2)
 
     # Extract edge strips based on orientation
+    # For strip2, we extract a wider region to allow for tolerance
     if orientation == 0:  # p2 above p1
         strip1 = g1[:depth, :]
-        strip2 = g2[-depth:, :]
+        # Extract more rows from p2 to allow tolerance window
+        start_idx = max(0, g2.shape[0] - depth - tolerance)
+        strip2_wide = g2[start_idx:, :]
     elif orientation == 1:  # p2 below p1
         strip1 = g1[-depth:, :]
-        strip2 = g2[:depth, :]
+        # Extract more rows from p2 to allow tolerance window
+        end_idx = min(g2.shape[0], depth + tolerance)
+        strip2_wide = g2[:end_idx, :]
     elif orientation == 2:  # p2 left of p1
         strip1 = g1[:, :depth]
-        strip2 = g2[:, -depth:]
+        # Extract more columns from p2 to allow tolerance window
+        start_idx = max(0, g2.shape[1] - depth - tolerance)
+        strip2_wide = g2[:, start_idx:]
     else:  # p2 right of p1
         strip1 = g1[:, -depth:]
-        strip2 = g2[:, :depth]
+        # Extract more columns from p2 to allow tolerance window
+        end_idx = min(g2.shape[1], depth + tolerance)
+        strip2_wide = g2[:, :end_idx]
 
     # Binarize (in case of any compression artifacts)
     strip1 = (strip1 > 127).astype(np.uint8)
-    strip2 = (strip2 > 127).astype(np.uint8)
+    strip2_wide = (strip2_wide > 127).astype(np.uint8)
 
-    # Calculate fraction of mismatched edge pixels
-    diff = np.abs(strip1.astype(np.int16) - strip2.astype(np.int16))
-    mismatch_fraction = np.sum(diff) / diff.size
+    # For each pixel in strip1, find the best match within the tolerance window in strip2
+    if orientation in [0, 1]:  # Vertical orientation
+        total_mismatch = 0
+        total_positions = depth * strip1.shape[1]
+        for row_offset in range(depth):
+            for col in range(strip1.shape[1]):
+                pixel1 = int(strip1[row_offset, col])
 
-    return float(mismatch_fraction)
+                # Determine the search window in strip2_wide
+                if orientation == 0:
+                    # For top orientation, match from bottom of strip2_wide
+                    center_row = strip2_wide.shape[0] - depth + row_offset
+                else:
+                    # For bottom orientation, match from top of strip2_wide
+                    center_row = row_offset
+
+                # Search in a tolerance window around the expected position
+                found_match = False
+                for dr in range(-tolerance, tolerance + 1):
+                    search_row = center_row + dr
+                    if 0 <= search_row < strip2_wide.shape[0]:
+                        pixel2 = int(strip2_wide[search_row, col])
+                        if pixel1 == pixel2:
+                            found_match = True
+                            break
+
+                if not found_match:
+                    total_mismatch += 1
+
+        mismatch_fraction = total_mismatch / max(1, total_positions)
+    else:  # Horizontal orientation
+        total_mismatch = 0
+        total_positions = depth * strip1.shape[0]
+        for col_offset in range(depth):
+            for row in range(strip1.shape[0]):
+                pixel1 = int(strip1[row, col_offset])
+
+                # Determine the search window in strip2_wide
+                if orientation == 2:
+                    # For left orientation, match from right of strip2_wide
+                    center_col = strip2_wide.shape[1] - depth + col_offset
+                else:
+                    # For right orientation, match from left of strip2_wide
+                    center_col = col_offset
+
+                # Search in a tolerance window around the expected position
+                found_match = False
+                for dc in range(-tolerance, tolerance + 1):
+                    search_col = center_col + dc
+                    if 0 <= search_col < strip2_wide.shape[1]:
+                        pixel2 = int(strip2_wide[row, search_col])
+                        if pixel1 == pixel2:
+                            found_match = True
+                            break
+
+                if not found_match:
+                    total_mismatch += 1
+
+        mismatch_fraction = total_mismatch / max(1, total_positions)
+
+    # Proximity score: (#matches - #misses)/N in [-1, 1]
+    matches = max(0, (max(1, total_positions) - total_mismatch))
+    misses = total_mismatch
+    proximity_score = (matches - misses) / max(1, total_positions)
+
+    # Combine base mismatch with proximity bonus/penalty
+    final = mismatch_fraction - (PROXIMITY_WEIGHT_EDGE * proximity_score)
+    # Ensure final is within [0, 1]
+    final = max(0.0, min(1.0, final))
+
+    return float(final)
 
 
 # --- Combined Calculator ---
@@ -320,20 +449,22 @@ class SimilarityCalculator:
         # Gradient compatibility: use upscaled pieces
         if self.w_gradient > 0 and "upscaled" in pieces_dict:
             p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
-            total += self.w_gradient * gradient_compatibility(p1, p2, orientation)
+            # total += self.w_gradient * gradient_compatibility(p1, p2, orientation)
 
         # Histogram: use upscaled pieces
         if self.w_histogram > 0 and "upscaled" in pieces_dict:
             p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
-            total += self.w_histogram * histogram_similarity(
-                p1, p2, orientation, HISTOGRAM_BINS, HISTOGRAM_EDGE_DEPTH
-            )
+            # total += self.w_histogram * histogram_similarity(
+            #     p1, p2, orientation, HISTOGRAM_BINS, HISTOGRAM_EDGE_DEPTH
+            # )
 
         # Edge gradient: use preprocessed edge images
         if self.w_edge > 0 and "edges" in pieces_dict:
             e1, e2 = pieces_dict["edges"][idx1], pieces_dict["edges"][idx2]
             # Use binary edge comparison with configured depth
-            total += self.w_edge * edge_gradient_binary(e1, e2, orientation, EDGE_DEPTH)
+            total += self.w_edge * edge_gradient_binary(
+                e1, e2, orientation, EDGE_DEPTH, PROXIMITY_TOLERANCE
+            )
 
         # Contour matching: use contour images
         if self.w_contour > 0 and "contours" in pieces_dict:
@@ -347,6 +478,6 @@ class SimilarityCalculator:
         # Texture: use prep pieces
         if self.w_texture > 0 and "prep" in pieces_dict:
             p1, p2 = pieces_dict["prep"][idx1], pieces_dict["prep"][idx2]
-            total += self.w_texture * texture_match(p1, p2, orientation, TEXTURE_DEPTH)
+            # total += self.w_texture * texture_match(p1, p2, orientation, TEXTURE_DEPTH)
 
         return total
