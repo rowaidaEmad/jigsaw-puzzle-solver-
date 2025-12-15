@@ -1,3 +1,8 @@
+quick and dirty scripts for now, please collab...
+python3 scripts/preprocess_puzzles.py -i data/puzzle_4x4 -o output/4x4 -g 4
+python scripts/solve_from_preprocessed.py -d output/4x4 --all --output-dir final --simple-names
+python scripts/compare_dirs.py data/correct/ final
+
 # Jigsaw Puzzle Solver
 
 A jigsaw puzzle solver using _awesomeness_ and computer vision :)

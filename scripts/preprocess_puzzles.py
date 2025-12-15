@@ -90,7 +90,7 @@ def process_single_puzzle(
         cv2.imwrite(str(dirs["binary"] / base_name), binary)
 
         # 5. Edges (Canny)
-        edges = cv2.Canny(gray_prep, 40, 50)
+        edges = cv2.Canny(gray_prep, 20, 150)
         cv2.imwrite(str(dirs["edges"] / base_name), edges)
 
         # 6. Contours

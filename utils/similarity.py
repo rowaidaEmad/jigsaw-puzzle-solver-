@@ -19,15 +19,15 @@ from typing import Optional
 
 # Color comparison depth (how many pixel rows/cols to compare at edges)
 # Higher = considers more pixels from the edge, slower but more accurate
-COLOR_DEPTH = 2
+COLOR_DEPTH = 3
 
 # Edge comparison depth (how many pixel rows/cols to sample from binary edges)
 # Higher = compares more of the edge strip, can help with noisy edges
-EDGE_DEPTH = 1
+EDGE_DEPTH = 3
 
 # Histogram comparison parameters
-HISTOGRAM_BINS = 32              # Number of bins for color histogram
-HISTOGRAM_EDGE_DEPTH = 3         # Pixel depth for histogram region
+HISTOGRAM_BINS = 32  # Number of bins for color histogram
+HISTOGRAM_EDGE_DEPTH = 3  # Pixel depth for histogram region
 
 # Texture comparison depth
 # Higher = considers larger region for texture analysis
@@ -333,13 +333,15 @@ class SimilarityCalculator:
         if self.w_edge > 0 and "edges" in pieces_dict:
             e1, e2 = pieces_dict["edges"][idx1], pieces_dict["edges"][idx2]
             # Use binary edge comparison with configured depth
-            total += self.w_edge * edge_gradient_binary(
-                e1, e2, orientation, EDGE_DEPTH
-            )
+            total += self.w_edge * edge_gradient_binary(e1, e2, orientation, EDGE_DEPTH)
 
         # Contour matching: use contour images
         if self.w_contour > 0 and "contours" in pieces_dict:
             c1, c2 = pieces_dict["contours"][idx1], pieces_dict["contours"][idx2]
+            print(
+                "i contributed with: ",
+                self.w_contour * contour_match(c1, c2, orientation),
+            )
             total += self.w_contour * contour_match(c1, c2, orientation)
 
         # Texture: use prep pieces
