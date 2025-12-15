@@ -25,6 +25,12 @@ COLOR_DEPTH = 1
 # Higher = compares more of the edge strip, can help with noisy edges
 EDGE_DEPTH = 1
 
+# Black border filtering threshold
+# Pixels with RGB values below this threshold (in all channels) will be ignored
+# in color similarity calculations. Set to 0 to disable filtering.
+# Typical values: 10-30 for strict filtering, 50-80 for moderate filtering
+BLACK_THRESHOLD = 30
+
 # Histogram comparison parameters
 HISTOGRAM_BINS = 32  # Number of bins for color histogram
 HISTOGRAM_EDGE_DEPTH = 3  # Pixel depth for histogram region
@@ -75,52 +81,123 @@ def color_ssd(
     orientation: int,
     use_lab: bool = True,
     depth: int = 1,
+    black_threshold: int = BLACK_THRESHOLD,
 ) -> float:
     """
     Sum of squared differences between adjacent edges.
+    Black/dark pixels (below black_threshold) are ignored in the comparison.
 
     Args:
         depth: How many rows/cols to compare (1 = edge only)
+        black_threshold: Pixels with all RGB channels below this value are ignored
     """
+    # Store original RGB values for black detection
+    p1_rgb = p1.copy()
+    p2_rgb = p2.copy()
+
     if use_lab:
         p1, p2 = rgb_to_lab(p1), rgb_to_lab(p2)
     else:
         p1, p2 = p1.astype(np.float32), p2.astype(np.float32)
 
     total = 0.0
+    valid_pixels_total = 0
+
     for d in range(depth):
         w = 1.0 / (d + 1)
         if orientation == 0:  # p2 above p1
             e1, e2 = p1[d, :], p2[-(d + 1), :]
+            e1_rgb, e2_rgb = p1_rgb[d, :], p2_rgb[-(d + 1), :]
         elif orientation == 1:  # p2 below p1
             e1, e2 = p1[-(d + 1), :], p2[d, :]
+            e1_rgb, e2_rgb = p1_rgb[-(d + 1), :], p2_rgb[d, :]
         elif orientation == 2:  # p2 left of p1
             e1, e2 = p1[:, d], p2[:, -(d + 1)]
+            e1_rgb, e2_rgb = p1_rgb[:, d], p2_rgb[:, -(d + 1)]
         else:  # p2 right of p1
             e1, e2 = p1[:, -(d + 1)], p2[:, d]
-        total += w * float(np.sum((e1 - e2) ** 2))
+            e1_rgb, e2_rgb = p1_rgb[:, -(d + 1)], p2_rgb[:, d]
+
+        # Create mask for non-black pixels
+        # A pixel is considered black if ALL channels are below the threshold
+        if len(e1_rgb.shape) == 2 and e1_rgb.shape[-1] == 3:
+            mask1 = np.any(e1_rgb >= black_threshold, axis=-1)
+            mask2 = np.any(e2_rgb >= black_threshold, axis=-1)
+        else:
+            # Grayscale or single channel
+            mask1 = e1_rgb >= black_threshold
+            mask2 = e2_rgb >= black_threshold
+
+        # Only consider pixels where BOTH are non-black
+        valid_mask = mask1 & mask2
+
+        if np.any(valid_mask):
+            # Compute SSD only for valid (non-black) pixels
+            if len(e1.shape) == 2:  # Multi-channel (LAB or RGB)
+                diff_sq = np.sum((e1[valid_mask] - e2[valid_mask]) ** 2, axis=-1)
+            else:  # Single channel
+                diff_sq = (e1[valid_mask] - e2[valid_mask]) ** 2
+
+            total += w * float(np.sum(diff_sq))
+            valid_pixels_total += np.sum(valid_mask)
+
+    # If all pixels were black, return a high penalty to discourage this match
+    if valid_pixels_total == 0:
+        return 1e6
+
     return total
 
 
-def gradient_compatibility(p1: np.ndarray, p2: np.ndarray, orientation: int) -> float:
+def gradient_compatibility(
+    p1: np.ndarray,
+    p2: np.ndarray,
+    orientation: int,
+    black_threshold: int = BLACK_THRESHOLD,
+) -> float:
     """
     Mahalanobis Gradient Compatibility.
     Predicts continuation of gradients across the boundary.
+    Black/dark pixels are ignored in the comparison.
     """
+    # Store original RGB for black detection
+    p1_rgb = p1.copy()
+    p2_rgb = p2.copy()
+
     p1, p2 = rgb_to_lab(p1), rgb_to_lab(p2)
 
     if orientation == 0:
         p1_inner, p1_edge = p1[1, :], p1[0, :]
         p2_edge, p2_inner = p2[-1, :], p2[-2, :]
+        p1_inner_rgb, p1_edge_rgb = p1_rgb[1, :], p1_rgb[0, :]
+        p2_edge_rgb, p2_inner_rgb = p2_rgb[-1, :], p2_rgb[-2, :]
     elif orientation == 1:
         p1_inner, p1_edge = p1[-2, :], p1[-1, :]
         p2_edge, p2_inner = p2[0, :], p2[1, :]
+        p1_inner_rgb, p1_edge_rgb = p1_rgb[-2, :], p1_rgb[-1, :]
+        p2_edge_rgb, p2_inner_rgb = p2_rgb[0, :], p2_rgb[1, :]
     elif orientation == 2:
         p1_inner, p1_edge = p1[:, 1], p1[:, 0]
         p2_edge, p2_inner = p2[:, -1], p2[:, -2]
+        p1_inner_rgb, p1_edge_rgb = p1_rgb[:, 1], p1_rgb[:, 0]
+        p2_edge_rgb, p2_inner_rgb = p2_rgb[:, -1], p2_rgb[:, -2]
     else:
         p1_inner, p1_edge = p1[:, -2], p1[:, -1]
         p2_edge, p2_inner = p2[:, 0], p2[:, 1]
+        p1_inner_rgb, p1_edge_rgb = p1_rgb[:, -2], p1_rgb[:, -1]
+        p2_edge_rgb, p2_inner_rgb = p2_rgb[:, 0], p2_rgb[:, 1]
+
+    # Create masks for non-black pixels
+    if len(p1_edge_rgb.shape) == 2:
+        mask1 = np.any(p1_edge_rgb >= black_threshold, axis=-1)
+        mask2 = np.any(p2_edge_rgb >= black_threshold, axis=-1)
+    else:
+        mask1 = p1_edge_rgb >= black_threshold
+        mask2 = p2_edge_rgb >= black_threshold
+
+    valid_mask = mask1 & mask2
+
+    if not np.any(valid_mask):
+        return 1e6
 
     grad1 = p1_edge - p1_inner
     grad2 = p2_inner - p2_edge
@@ -129,7 +206,16 @@ def gradient_compatibility(p1: np.ndarray, p2: np.ndarray, orientation: int) -> 
 
     err1 = pred_p2 - p2_edge
     err2 = pred_p1 - p1_edge
-    return float(np.sum(err1**2) + np.sum(err2**2))
+
+    # Only compute error for valid (non-black) pixels
+    if len(err1.shape) == 2:
+        err1_filtered = err1[valid_mask]
+        err2_filtered = err2[valid_mask]
+    else:
+        err1_filtered = err1[valid_mask]
+        err2_filtered = err2[valid_mask]
+
+    return float(np.sum(err1_filtered**2) + np.sum(err2_filtered**2))
 
 
 def histogram_similarity(
@@ -138,8 +224,12 @@ def histogram_similarity(
     orientation: int,
     bins: int = 32,
     edge_depth: int = 3,
+    black_threshold: int = BLACK_THRESHOLD,
 ) -> float:
-    """Compare color histograms of edge regions."""
+    """
+    Compare color histograms of edge regions.
+    Black/dark pixels are excluded from the histogram.
+    """
     if orientation == 0:
         r1, r2 = p1[:edge_depth, :], p2[-edge_depth:, :]
     elif orientation == 1:
@@ -149,10 +239,28 @@ def histogram_similarity(
     else:
         r1, r2 = p1[:, -edge_depth:], p2[:, :edge_depth]
 
+    # Create mask for non-black pixels
+    if len(r1.shape) == 3:
+        mask1 = np.any(r1 >= black_threshold, axis=-1)
+        mask2 = np.any(r2 >= black_threshold, axis=-1)
+    else:
+        mask1 = r1 >= black_threshold
+        mask2 = r2 >= black_threshold
+
+    if not np.any(mask1) or not np.any(mask2):
+        return 1e6
+
     total = 0.0
     for c in range(3):
-        h1, _ = np.histogram(r1[:, :, c].flatten(), bins=bins, range=(0, 256))
-        h2, _ = np.histogram(r2[:, :, c].flatten(), bins=bins, range=(0, 256))
+        # Only include non-black pixels in histogram
+        r1_filtered = r1[:, :, c][mask1]
+        r2_filtered = r2[:, :, c][mask2]
+
+        if len(r1_filtered) == 0 or len(r2_filtered) == 0:
+            continue
+
+        h1, _ = np.histogram(r1_filtered.flatten(), bins=bins, range=(0, 256))
+        h2, _ = np.histogram(r2_filtered.flatten(), bins=bins, range=(0, 256))
         h1 = h1.astype(np.float32).reshape(-1)
         h2 = h2.astype(np.float32).reshape(-1)
         h1 /= h1.sum() + 1e-10
