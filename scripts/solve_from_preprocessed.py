@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-Solver Script - Solve puzzles from preprocessed outputs with configurable weights.
+Solver Script - Solve puzzles from preprocessed outputs.
 
-Usage:
-    python solve_from_preprocessed.py -d output/tiles_4x4 -o results --puzzle-id 0
-    python solve_from_preprocessed.py -d output/tiles_8x8 -o results --all --method genetic
-    python solve_from_preprocessed.py -d output/tiles_4x4 --puzzle-id 5 --weight-color 2.0 --weight-contour 0.5
+Notes:
+    - Similarity weights are configured centrally in `utils/similarity.py`.
+    - Use this script to run greedy/genetic solvers over preprocessed tiles.
 """
 
 import sys
@@ -145,31 +144,10 @@ def main():
         help="Start index when using --simple-names (default: 0)",
     )
 
-    # Similarity weights
-    parser.add_argument(
-        "--weight-color", type=float, default=1.0, help="Color SSD weight"
-    )
-    parser.add_argument(
-        "--weight-gradient",
-        type=float,
-        default=0.5,
-        help="Gradient compatibility weight",
-    )
-    parser.add_argument(
-        "--weight-histogram",
-        type=float,
-        default=0.2,
-        help="Histogram similarity weight",
-    )
-    parser.add_argument(
-        "--weight-edge", type=float, default=0.3, help="Edge gradient weight"
-    )
-    parser.add_argument(
-        "--weight-contour", type=float, default=0.2, help="Contour matching weight"
-    )
-    parser.add_argument(
-        "--weight-texture", type=float, default=0.1, help="Texture similarity weight"
-    )
+    # NOTE: Similarity weights are configured centrally in utils/similarity.py
+    # and are NOT passed via CLI anymore. Edit the constants there to tune
+    # behavior: WEIGHT_COLOR, WEIGHT_GRADIENT, WEIGHT_HISTOGRAM,
+    # WEIGHT_EDGE, WEIGHT_CONTOUR, WEIGHT_TEXTURE
 
     args = parser.parse_args()
 
@@ -202,16 +180,8 @@ def main():
         print(f"Error initializing PieceLoader: {e}")
         return
 
-    # Create similarity calculator with custom weights
-    # Internal configs (depth values, color space) are set at top of utils/similarity.py
-    similarity_calc = SimilarityCalculator(
-        weight_color=args.weight_color,
-        weight_gradient=args.weight_gradient,
-        weight_histogram=args.weight_histogram,
-        weight_edge=args.weight_edge,
-        weight_contour=args.weight_contour,
-        weight_texture=args.weight_texture,
-    )
+    # Create similarity calculator (reads weights from utils/similarity.py)
+    similarity_calc = SimilarityCalculator()
 
     # Solver kwargs
     solver_kwargs = {
@@ -232,13 +202,7 @@ def main():
     if args.method == "genetic":
         print(f"  Generations: {args.generations}")
         print(f"  Population: {args.population}")
-    print(f"\nSimilarity Weights:")
-    print(f"  Color:     {args.weight_color}")
-    print(f"  Gradient:  {args.weight_gradient}")
-    print(f"  Histogram: {args.weight_histogram}")
-    print(f"  Edge:      {args.weight_edge}")
-    print(f"  Contour:   {args.weight_contour}")
-    print(f"  Texture:   {args.weight_texture}")
+    print(f"\nSimilarity weights are read from utils/similarity.py constants")
     print()
 
     # Determine puzzles to solve
