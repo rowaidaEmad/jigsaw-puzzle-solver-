@@ -32,6 +32,8 @@ def solve(
     """
     if method == "genetic":
         return _solve_genetic(pieces_dict, rows, cols, similarity, **kwargs)
+    elif method == "tabu":
+        return _solve_tabu(pieces_dict, rows, cols, similarity, **kwargs)
     else:
         return _solve_greedy(pieces_dict, rows, cols, similarity)
 
@@ -127,5 +129,39 @@ def _solve_genetic(
         mutation_rate=kwargs.get("mutation_rate", 0.05),
         mutation_swaps=kwargs.get("mutation_swaps", 1),
         local_iters=kwargs.get("local_iters", 10),
+    )
+    return solver.solve()
+def _solve_tabu(
+    pieces_dict: dict,
+    rows: int,
+    cols: int,
+    similarity: Optional[SimilarityCalculator] = None,
+    **kwargs,
+) -> List[int]:
+    """Tabu search solver (often faster than GA for 8x8)."""
+    from solvers.tabu import TabuSolver, TabuParams
+
+    # Start from greedy (good initializer) unless user wants random
+    init = kwargs.get("tabu_init", "greedy")
+    if init == "greedy":
+        initial = _solve_greedy(pieces_dict, rows, cols, similarity)
+    else:
+        initial = list(range(rows * cols))
+        np.random.shuffle(initial)
+
+    params = TabuParams(
+        iterations=int(kwargs.get("tabu_iters", 3000)),
+        tabu_tenure=int(kwargs.get("tabu_tenure", 50)),
+        neighborhood=int(kwargs.get("tabu_neighborhood", 200)),
+        seed=kwargs.get("tabu_seed", None),
+    )
+
+    solver = TabuSolver(
+        pieces_dict=pieces_dict,
+        rows=rows,
+        cols=cols,
+        similarity_calc=similarity,
+        initial=initial,
+        params=params,
     )
     return solver.solve()

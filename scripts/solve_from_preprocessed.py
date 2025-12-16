@@ -101,7 +101,7 @@ def main():
 
     # Solver method
     parser.add_argument(
-        "-m", "--method", choices=["greedy", "genetic"], default="genetic"
+        "-m", "--method", choices=["greedy", "genetic", "tabu"], default="genetic"
     )
     parser.add_argument("--generations", type=int, default=100, help="GA generations")
     parser.add_argument(
@@ -143,6 +143,13 @@ def main():
         default=0,
         help="Start index when using --simple-names (default: 0)",
     )
+# Tabu Search options
+    parser.add_argument("--tabu-iters", type=int, default=3000, help="Tabu iterations")
+    parser.add_argument("--tabu-tenure", type=int, default=50, help="Tabu list tenure (iterations)")
+    parser.add_argument("--tabu-neighborhood", type=int, default=200, help="Neighborhood size (#swap candidates per iter)")
+    parser.add_argument("--tabu-init", choices=["greedy", "random"], default="greedy", help="Tabu initial solution")
+    parser.add_argument("--tabu-seed", type=int, default=None, help="Random seed for tabu (optional)")
+    
 
     # NOTE: Similarity weights are configured centrally in utils/similarity.py
     # and are NOT passed via CLI anymore. Edit the constants there to tune
@@ -192,6 +199,14 @@ def main():
         "mutation_swaps": args.mutation_swaps,
         "local_iters": args.local_iters,
     }
+    solver_kwargs.update({
+    "tabu_iters": args.tabu_iters,
+    "tabu_tenure": args.tabu_tenure,
+    "tabu_neighborhood": args.tabu_neighborhood,
+    "tabu_init": args.tabu_init,
+    "tabu_seed": args.tabu_seed,
+})
+
 
     # Print configuration
     print(f"Solver Configuration")
