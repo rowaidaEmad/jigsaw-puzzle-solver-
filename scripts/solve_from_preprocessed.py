@@ -19,7 +19,7 @@ import numpy as np
 from tqdm import tqdm
 
 from utils.piece_loader import PieceLoader
-from solvers.solver import solve
+from solvers.graph_solver import solve_graph
 from utils.image_utils import merge_pieces, save_image
 from utils.similarity import SimilarityCalculator
 
@@ -44,14 +44,13 @@ def solve_single(
         rows, cols = loader.rows, loader.cols
 
         # Solve using all preprocessed types
-        arrangement = solve(
+        arrangement = solve_graph(
             pieces_dict=pieces_dict,
             rows=rows,
             cols=cols,
-            method=method,
-            similarity=similarity_calc,
-            **solver_kwargs,
+            similarity=similarity_calc
         )
+
 
         # Reconstruct final image using ORIGINAL pieces
         result = merge_pieces(pieces_dict["original"], arrangement, rows)
@@ -103,9 +102,9 @@ def main():
     parser.add_argument(
         "-m", "--method", choices=["greedy", "genetic"], default="genetic"
     )
-    parser.add_argument("--generations", type=int, default=300, help="GA generations")
+    parser.add_argument("--generations", type=int, default=100, help="GA generations")
     parser.add_argument(
-        "--population", type=int, default=300, help="GA population size"
+        "--population", type=int, default=100, help="GA population size"
     )
     # Small, high-impact GA options
     parser.add_argument(
@@ -117,7 +116,7 @@ def main():
     parser.add_argument(
         "--mutation-rate",
         type=float,
-        default=0.1,
+        default=0.05,
         help="Per-child mutation probability",
     )
     parser.add_argument(
@@ -129,7 +128,7 @@ def main():
     parser.add_argument(
         "--local-iters",
         type=int,
-        default=30,
+        default=10,
         help="Local improvement swap attempts per child",
     )
     parser.add_argument(
