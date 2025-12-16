@@ -6,6 +6,48 @@ import numpy as np
 from typing import List, Optional
 
 from utils.similarity import SimilarityCalculator
+import itertools
+
+def solve_2x2_exhaustive(pieces_dict, similarity):
+    """
+    Exhaustive solver for 2x2 puzzles.
+    Tries all 4! = 24 permutations and picks the one
+    with minimum total edge mismatch cost.
+    GUARANTEES optimal solution.
+    """
+    sim = similarity
+    n = len(pieces_dict["original"])  # should be 4
+
+    # Precompute edge mismatch costs
+    diss_h = np.zeros((n, n))  # right neighbor cost
+    diss_v = np.zeros((n, n))  # bottom neighbor cost
+
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                diss_h[i, j] = sim.compute(i, j, 3, pieces_dict)
+                diss_v[i, j] = sim.compute(i, j, 1, pieces_dict)
+
+    best_cost = float("inf")
+    best_perm = None
+
+    # Try all possible arrangements
+    for perm in itertools.permutations(range(n)):
+        cost = 0.0
+
+        # Horizontal edges
+        cost += diss_h[perm[0], perm[1]]
+        cost += diss_h[perm[2], perm[3]]
+
+        # Vertical edges
+        cost += diss_v[perm[0], perm[2]]
+        cost += diss_v[perm[1], perm[3]]
+
+        if cost < best_cost:
+            best_cost = cost
+            best_perm = perm
+
+    return list(best_perm)
 
 
 def solve(
@@ -30,6 +72,12 @@ def solve(
     Returns:
         List of piece indices in solved order
     """
+        # Force exhaustive solver for 2x2 puzzles (guaranteed optimal)
+    if rows == 2 and cols == 2:
+        print("Using solver: exhaustive search (2x2)")
+        sim = similarity or SimilarityCalculator()
+        return solve_2x2_exhaustive(pieces_dict, sim)
+
     if method == "genetic":
         return _solve_genetic(pieces_dict, rows, cols, similarity, **kwargs)
     else:
@@ -129,3 +177,4 @@ def _solve_genetic(
         local_iters=kwargs.get("local_iters", 10),
     )
     return solver.solve()
+
