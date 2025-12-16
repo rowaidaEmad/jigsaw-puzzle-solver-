@@ -345,18 +345,6 @@ python3 scripts/check_accuracy.py \
 
 ---
 
-## Performance Metrics
-
-| Grid Size | Puzzles Tested | Avg. Accuracy | Exact Matches | Time/Puzzle |
-| --------- | -------------- | ------------- | ------------- | ----------- |
-| 2×2       | TBD            | TBD           | TBD           | ~1s         |
-| 4×4       | 110            | 85.86%        | 81.6%         | ~2.5s       |
-| 8×8       | TBD            | TBD           | TBD           | ~15s        |
-
-_Tested on Apple M1 / Intel i7 machines_
-
----
-
 ## The Accuracy Checking Script
 
 The `check_accuracy.py` script provides detailed evaluation capabilities:
