@@ -19,17 +19,19 @@ from typing import Optional
 
 # Color comparison depth (how many pixel rows/cols to compare at edges)
 # Higher = considers more pixels from the edge, slower but more accurate
+# For small pieces: 2-3 pixels is optimal
 COLOR_DEPTH = 1
 
 # Edge comparison depth (how many pixel rows/cols to sample from binary edges)
 # Higher = compares more of the edge strip, can help with noisy edges
+# For small pieces: use 2-3 pixels (too high reduces discriminative power)
 EDGE_DEPTH = 1
 
 # Black border filtering threshold
 # Pixels with RGB values below this threshold (in all channels) will be ignored
 # in color similarity calculations. Set to 0 to disable filtering.
 # Typical values: 10-30 for strict filtering, 50-80 for moderate filtering
-BLACK_THRESHOLD = 30
+BLACK_THRESHOLD = 20
 
 # Histogram comparison parameters
 HISTOGRAM_BINS = 32  # Number of bins for color histogram
@@ -50,20 +52,21 @@ USE_LAB_COLOR = True
 # 'miss' (-1). The proximity weights control how much this helps/hurts
 # the resulting dissimilarity (positive lowers dissimilarity when matches
 # dominate, negative increases when misses dominate).
+# For combined matching with small pieces, use moderate tolerance (2-3)
 PROXIMITY_TOLERANCE = 2
 PROXIMITY_WEIGHT_EDGE = 0.5
 PROXIMITY_WEIGHT_CONTOUR = 0.5
 
 # ============================================================================
 # WEIGHTS - configure these to tune the combined similarity scoring
-# Modify THESE constants only. Other code should not pass weights around.
+# Optimized edge-only matching with enhanced features
 # ============================================================================
-WEIGHT_COLOR = 1.0
-WEIGHT_GRADIENT = 0.5
+WEIGHT_COLOR = 5.0
+WEIGHT_GRADIENT = 1
 WEIGHT_HISTOGRAM = 0.2
-WEIGHT_EDGE = 0.3
-WEIGHT_CONTOUR = 0.2
-WEIGHT_TEXTURE = 0.1
+WEIGHT_EDGE = 0.8
+WEIGHT_CONTOUR = 1
+WEIGHT_TEXTURE = 0.2
 
 # ============================================================================
 # ============================================================================
@@ -555,14 +558,14 @@ class SimilarityCalculator:
         # Gradient compatibility: use upscaled pieces
         if self.w_gradient > 0 and "upscaled" in pieces_dict:
             p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
-            # total += self.w_gradient * gradient_compatibility(p1, p2, orientation)
+            total += self.w_gradient * gradient_compatibility(p1, p2, orientation)
 
         # Histogram: use upscaled pieces
         if self.w_histogram > 0 and "upscaled" in pieces_dict:
             p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
-            # total += self.w_histogram * histogram_similarity(
-            #     p1, p2, orientation, HISTOGRAM_BINS, HISTOGRAM_EDGE_DEPTH
-            # )
+            total += self.w_histogram * histogram_similarity(
+                p1, p2, orientation, HISTOGRAM_BINS, HISTOGRAM_EDGE_DEPTH
+            )
 
         # Edge gradient: use preprocessed edge images
         if self.w_edge > 0 and "edges" in pieces_dict:
@@ -580,6 +583,6 @@ class SimilarityCalculator:
         # Texture: use prep pieces
         if self.w_texture > 0 and "prep" in pieces_dict:
             p1, p2 = pieces_dict["prep"][idx1], pieces_dict["prep"][idx2]
-            # total += self.w_texture * texture_match(p1, p2, orientation, TEXTURE_DEPTH)
+            total += self.w_texture * texture_match(p1, p2, orientation, TEXTURE_DEPTH)
 
         return total

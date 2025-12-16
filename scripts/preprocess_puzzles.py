@@ -71,15 +71,14 @@ def process_single_puzzle(
         )
 
         # 3. Upscaled
-        piece_upscaled = upscale_lanczos_sharp(piece_prep, scale_factor=2)
-        piece_upscaled_resized = cv2.resize(piece_upscaled, (piece_size, piece_size))
+        piece_upscaled = upscale_lanczos_sharp(piece_prep, scale_factor=4)
         cv2.imwrite(
             str(dirs["upscaled"] / base_name),
-            cv2.cvtColor(piece_upscaled_resized, cv2.COLOR_RGB2BGR),
+            cv2.cvtColor(piece_upscaled, cv2.COLOR_RGB2BGR),
         )
 
         # 4. Binary (for contour detection)
-        gray = cv2.cvtColor(piece_upscaled_resized, cv2.COLOR_RGB2GRAY)
+        gray = cv2.cvtColor(piece_upscaled, cv2.COLOR_RGB2GRAY)
         gray_prep = cv2.medianBlur(gray, 3)
         binary = cv2.adaptiveThreshold(
             gray_prep, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
@@ -90,17 +89,39 @@ def process_single_puzzle(
         cv2.imwrite(str(dirs["binary"] / base_name), binary)
 
         # 5. Edges (Canny)
-        edges = cv2.Canny(gray_prep, 20, 150)
+        v = np.median(gray_prep)
+        low = int(0.55 * v)
+        high = int(1 * v)
+
+        edges = cv2.Canny(gray_prep, low, high)
         cv2.imwrite(str(dirs["edges"] / base_name), edges)
 
-        # 6. Contours
         contours, _ = cv2.findContours(
             binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
+
         contour_img = np.zeros_like(binary)
-        if contours:
-            main_contour = max(contours, key=cv2.contourArea)
-            cv2.drawContours(contour_img, [main_contour], -1, 255, 2)
+        H, W = binary.shape
+
+        if not contours:
+            cv2.imwrite(str(dirs["contours"] / base_name), contour_img)
+            return
+
+        areas = [(c, cv2.contourArea(c)) for c in contours]
+        areas.sort(key=lambda x: x[1], reverse=True)
+
+        # dynamic min area (adaptive, not stupid)
+        min_area = 0.002 * H * W  # 0.2% of image
+
+        valid = [c for c, a in areas if a > min_area]
+
+        # FALLBACK: if filtering killed everything, take largest anyway
+        if not valid:
+            main_contour = areas[0][0]
+        else:
+            main_contour = max(valid, key=cv2.contourArea)
+
+        cv2.drawContours(contour_img, [main_contour], -1, 255, 2)
         cv2.imwrite(str(dirs["contours"] / base_name), contour_img)
 
     return True
@@ -130,10 +151,10 @@ def main():
     output_dir = Path(args.output_dir)
 
     # Calculate piece size based on standard 224x224 images
-    piece_sizes = {2: 112, 4: 56, 8: 28}
+    piece_sizes = {1: 224, 2: 112, 4: 56, 8: 28}
     piece_size = piece_sizes.get(args.grid)
     if not piece_size:
-        print(f"Error: Unsupported grid size {args.grid}. Use 2, 4, or 8.")
+        print(f"Error: Unsupported grid size {args.grid}. Use 1, 2, 4, or 8.")
         return
 
     print(f"Preprocessing {args.num_images} puzzles from {input_dir}")
@@ -146,6 +167,7 @@ def main():
         range(args.start_id, args.start_id + args.num_images), desc="Processing"
     ):
         input_path = input_dir / f"{i}.jpg"
+        # input_path = input_dir / f"{i}.png"
 
         if not input_path.exists():
             continue
