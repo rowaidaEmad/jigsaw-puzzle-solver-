@@ -104,9 +104,9 @@ def main():
     parser.add_argument(
         "-m", "--method", choices=["greedy", "genetic"], default="genetic"
     )
-    parser.add_argument("--generations", type=int, default=100, help="GA generations")
+    parser.add_argument("--generations", type=int, default=300, help="GA generations")
     parser.add_argument(
-        "--population", type=int, default=100, help="GA population size"
+        "--population", type=int, default=300, help="GA population size"
     )
     # Small, high-impact GA options
     parser.add_argument(
@@ -118,7 +118,7 @@ def main():
     parser.add_argument(
         "--mutation-rate",
         type=float,
-        default=0.05,
+        default=0.1,
         help="Per-child mutation probability",
     )
     parser.add_argument(
@@ -130,7 +130,7 @@ def main():
     parser.add_argument(
         "--local-iters",
         type=int,
-        default=10,
+        default=30,
         help="Local improvement swap attempts per child",
     )
     parser.add_argument(
@@ -147,7 +147,7 @@ def main():
 
     # Similarity weights
     parser.add_argument(
-        "--weight-color", type=float, default=1.0, help="Color SSD weight"
+        "--weight-color", type=float, default=2.0, help="Color SSD weight"
     )
     parser.add_argument(
         "--weight-gradient",
@@ -158,17 +158,17 @@ def main():
     parser.add_argument(
         "--weight-histogram",
         type=float,
-        default=0.2,
+        default=0.4,
         help="Histogram similarity weight",
     )
     parser.add_argument(
-        "--weight-edge", type=float, default=0.3, help="Edge gradient weight"
+        "--weight-edge", type=float, default=0.1, help="Edge gradient weight"
     )
     parser.add_argument(
-        "--weight-contour", type=float, default=0.2, help="Contour matching weight"
+        "--weight-contour", type=float, default=0.0, help="Contour matching weight"
     )
     parser.add_argument(
-        "--weight-texture", type=float, default=0.1, help="Texture similarity weight"
+        "--weight-texture", type=float, default=0.0, help="Texture similarity weight"
     )
 
     args = parser.parse_args()
