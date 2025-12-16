@@ -144,6 +144,96 @@ def main():
         help="Start index when using --simple-names (default: 0)",
     )
 
+    # Similarity weights
+    parser.add_argument(
+        "--weight-color",
+        type=float,
+        help="Weight for color similarity (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--weight-gradient",
+        type=float,
+        help="Weight for gradient compatibility (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--weight-histogram",
+        type=float,
+        help="Weight for histogram similarity (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--weight-edge",
+        type=float,
+        help="Weight for edge matching (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--weight-contour",
+        type=float,
+        help="Weight for contour matching (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--weight-texture",
+        type=float,
+        help="Weight for texture matching (default: from similarity.py)",
+    )
+
+    # Depth parameters
+    parser.add_argument(
+        "--color-depth",
+        type=int,
+        help="Pixel depth for color comparison (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--edge-depth",
+        type=int,
+        help="Pixel depth for edge comparison (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--histogram-edge-depth",
+        type=int,
+        help="Pixel depth for histogram region (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--texture-depth",
+        type=int,
+        help="Pixel depth for texture analysis (default: from similarity.py)",
+    )
+
+    # Thresholds
+    parser.add_argument(
+        "--black-threshold",
+        type=int,
+        help="Black pixel filtering threshold (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--histogram-bins",
+        type=int,
+        help="Number of bins for color histogram (default: from similarity.py)",
+    )
+
+    # Proximity parameters
+    parser.add_argument(
+        "--proximity-tolerance",
+        type=int,
+        help="Tolerance for proximity matching (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--proximity-weight-edge",
+        type=float,
+        help="Proximity weight for edge matching (default: from similarity.py)",
+    )
+    parser.add_argument(
+        "--proximity-weight-contour",
+        type=float,
+        help="Proximity weight for contour matching (default: from similarity.py)",
+    )
+
+    # Color space
+    parser.add_argument(
+        "--use-lab-color",
+        type=lambda x: x.lower() in ["true", "1", "yes"],
+        help="Use LAB color space instead of RGB (default: from similarity.py)",
+    )
+
     # NOTE: Similarity weights are configured centrally in utils/similarity.py
     # and are NOT passed via CLI anymore. Edit the constants there to tune
     # behavior: WEIGHT_COLOR, WEIGHT_GRADIENT, WEIGHT_HISTOGRAM,
@@ -180,8 +270,42 @@ def main():
         print(f"Error initializing PieceLoader: {e}")
         return
 
-    # Create similarity calculator (reads weights from utils/similarity.py)
-    similarity_calc = SimilarityCalculator()
+    # Create similarity calculator with CLI parameters
+    similarity_kwargs = {}
+    if args.weight_color is not None:
+        similarity_kwargs["weight_color"] = args.weight_color
+    if args.weight_gradient is not None:
+        similarity_kwargs["weight_gradient"] = args.weight_gradient
+    if args.weight_histogram is not None:
+        similarity_kwargs["weight_histogram"] = args.weight_histogram
+    if args.weight_edge is not None:
+        similarity_kwargs["weight_edge"] = args.weight_edge
+    if args.weight_contour is not None:
+        similarity_kwargs["weight_contour"] = args.weight_contour
+    if args.weight_texture is not None:
+        similarity_kwargs["weight_texture"] = args.weight_texture
+    if args.color_depth is not None:
+        similarity_kwargs["color_depth"] = args.color_depth
+    if args.edge_depth is not None:
+        similarity_kwargs["edge_depth"] = args.edge_depth
+    if args.histogram_edge_depth is not None:
+        similarity_kwargs["histogram_edge_depth"] = args.histogram_edge_depth
+    if args.texture_depth is not None:
+        similarity_kwargs["texture_depth"] = args.texture_depth
+    if args.black_threshold is not None:
+        similarity_kwargs["black_threshold"] = args.black_threshold
+    if args.histogram_bins is not None:
+        similarity_kwargs["histogram_bins"] = args.histogram_bins
+    if args.proximity_tolerance is not None:
+        similarity_kwargs["proximity_tolerance"] = args.proximity_tolerance
+    if args.proximity_weight_edge is not None:
+        similarity_kwargs["proximity_weight_edge"] = args.proximity_weight_edge
+    if args.proximity_weight_contour is not None:
+        similarity_kwargs["proximity_weight_contour"] = args.proximity_weight_contour
+    if args.use_lab_color is not None:
+        similarity_kwargs["use_lab_color"] = args.use_lab_color
+
+    similarity_calc = SimilarityCalculator(**similarity_kwargs)
 
     # Solver kwargs
     solver_kwargs = {
@@ -202,7 +326,14 @@ def main():
     if args.method == "genetic":
         print(f"  Generations: {args.generations}")
         print(f"  Population: {args.population}")
-    print(f"\nSimilarity weights are read from utils/similarity.py constants")
+
+    print(f"\nSimilarity Configuration:")
+    if similarity_kwargs:
+        print("  Custom parameters:")
+        for key, value in similarity_kwargs.items():
+            print(f"    {key}: {value}")
+    else:
+        print("  Using defaults from utils/similarity.py")
     print()
 
     # Determine puzzles to solve

@@ -6,6 +6,56 @@ Lower score = better match.
 
 Orientation: 0=top, 1=bottom, 2=left, 3=right
 (where p2 is placed relative to p1)
+
+CONFIGURATION:
+--------------
+Parameters can be configured in three ways (in order of precedence):
+
+1. CLI Arguments (when using solve_from_preprocessed.py):
+   Example:
+   python scripts/solve_from_preprocessed.py -d output/2x2 --all \
+       --weight-color 5.0 --weight-edge 0.8 --color-depth 2 \
+       --black-threshold 30 --proximity-tolerance 3
+
+2. Programmatically (when instantiating SimilarityCalculator):
+   sim_calc = SimilarityCalculator(
+       weight_color=5.0,
+       weight_edge=0.8,
+       color_depth=2,
+       black_threshold=30,
+       proximity_tolerance=3
+   )
+
+3. Module-level constants (defaults):
+   Modify the constants below to set global defaults.
+
+Available Parameters:
+---------------------
+Weights:
+  - weight_color: Weight for color similarity (default: WEIGHT_COLOR)
+  - weight_gradient: Weight for gradient compatibility (default: WEIGHT_GRADIENT)
+  - weight_histogram: Weight for histogram similarity (default: WEIGHT_HISTOGRAM)
+  - weight_edge: Weight for edge matching (default: WEIGHT_EDGE)
+  - weight_contour: Weight for contour matching (default: WEIGHT_CONTOUR)
+  - weight_texture: Weight for texture matching (default: WEIGHT_TEXTURE)
+
+Depth Parameters:
+  - color_depth: Pixel rows/cols for color comparison (default: COLOR_DEPTH)
+  - edge_depth: Pixel rows/cols for edge comparison (default: EDGE_DEPTH)
+  - histogram_edge_depth: Pixel depth for histogram region (default: HISTOGRAM_EDGE_DEPTH)
+  - texture_depth: Pixel depth for texture analysis (default: TEXTURE_DEPTH)
+
+Thresholds:
+  - black_threshold: Black pixel filtering threshold (default: BLACK_THRESHOLD)
+  - histogram_bins: Number of bins for color histogram (default: HISTOGRAM_BINS)
+
+Proximity Matching:
+  - proximity_tolerance: Tolerance for proximity matching (default: PROXIMITY_TOLERANCE)
+  - proximity_weight_edge: Proximity weight for edge matching (default: PROXIMITY_WEIGHT_EDGE)
+  - proximity_weight_contour: Proximity weight for contour matching (default: PROXIMITY_WEIGHT_CONTOUR)
+
+Color Space:
+  - use_lab_color: Use LAB color space instead of RGB (default: USE_LAB_COLOR)
 """
 
 import cv2
@@ -517,16 +567,90 @@ class SimilarityCalculator:
     """
     Weighted combination of similarity functions using preprocessed piece types.
 
+    All parameters are optional and will use module-level constants as defaults.
     """
 
-    def __init__(self):
-        # Read weights from module-level constants
-        self.w_color = WEIGHT_COLOR
-        self.w_gradient = WEIGHT_GRADIENT
-        self.w_histogram = WEIGHT_HISTOGRAM
-        self.w_edge = WEIGHT_EDGE
-        self.w_contour = WEIGHT_CONTOUR
-        self.w_texture = WEIGHT_TEXTURE
+    def __init__(
+        self,
+        # Weights
+        weight_color: float = None,
+        weight_gradient: float = None,
+        weight_histogram: float = None,
+        weight_edge: float = None,
+        weight_contour: float = None,
+        weight_texture: float = None,
+        # Depth parameters
+        color_depth: int = None,
+        edge_depth: int = None,
+        histogram_edge_depth: int = None,
+        texture_depth: int = None,
+        # Thresholds
+        black_threshold: int = None,
+        histogram_bins: int = None,
+        # Proximity parameters
+        proximity_tolerance: int = None,
+        proximity_weight_edge: float = None,
+        proximity_weight_contour: float = None,
+        # Color space
+        use_lab_color: bool = None,
+    ):
+        # Weights: use provided values or fall back to module constants
+        self.w_color = weight_color if weight_color is not None else WEIGHT_COLOR
+        self.w_gradient = (
+            weight_gradient if weight_gradient is not None else WEIGHT_GRADIENT
+        )
+        self.w_histogram = (
+            weight_histogram if weight_histogram is not None else WEIGHT_HISTOGRAM
+        )
+        self.w_edge = weight_edge if weight_edge is not None else WEIGHT_EDGE
+        self.w_contour = (
+            weight_contour if weight_contour is not None else WEIGHT_CONTOUR
+        )
+        self.w_texture = (
+            weight_texture if weight_texture is not None else WEIGHT_TEXTURE
+        )
+
+        # Depth parameters
+        self.color_depth = color_depth if color_depth is not None else COLOR_DEPTH
+        self.edge_depth = edge_depth if edge_depth is not None else EDGE_DEPTH
+        self.histogram_edge_depth = (
+            histogram_edge_depth
+            if histogram_edge_depth is not None
+            else HISTOGRAM_EDGE_DEPTH
+        )
+        self.texture_depth = (
+            texture_depth if texture_depth is not None else TEXTURE_DEPTH
+        )
+
+        # Thresholds
+        self.black_threshold = (
+            black_threshold if black_threshold is not None else BLACK_THRESHOLD
+        )
+        self.histogram_bins = (
+            histogram_bins if histogram_bins is not None else HISTOGRAM_BINS
+        )
+
+        # Proximity parameters
+        self.proximity_tolerance = (
+            proximity_tolerance
+            if proximity_tolerance is not None
+            else PROXIMITY_TOLERANCE
+        )
+        self.proximity_weight_edge = (
+            proximity_weight_edge
+            if proximity_weight_edge is not None
+            else PROXIMITY_WEIGHT_EDGE
+        )
+        self.proximity_weight_contour = (
+            proximity_weight_contour
+            if proximity_weight_contour is not None
+            else PROXIMITY_WEIGHT_CONTOUR
+        )
+
+        # Color space
+        self.use_lab_color = (
+            use_lab_color if use_lab_color is not None else USE_LAB_COLOR
+        )
 
     def compute(
         self,
@@ -552,19 +676,31 @@ class SimilarityCalculator:
         if self.w_color > 0 and "upscaled" in pieces_dict:
             p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
             total += self.w_color * color_ssd(
-                p1, p2, orientation, USE_LAB_COLOR, COLOR_DEPTH
+                p1,
+                p2,
+                orientation,
+                self.use_lab_color,
+                self.color_depth,
+                self.black_threshold,
             )
 
         # Gradient compatibility: use upscaled pieces
         if self.w_gradient > 0 and "upscaled" in pieces_dict:
             p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
-            total += self.w_gradient * gradient_compatibility(p1, p2, orientation)
+            total += self.w_gradient * gradient_compatibility(
+                p1, p2, orientation, self.black_threshold
+            )
 
         # Histogram: use upscaled pieces
         if self.w_histogram > 0 and "upscaled" in pieces_dict:
             p1, p2 = pieces_dict["upscaled"][idx1], pieces_dict["upscaled"][idx2]
             total += self.w_histogram * histogram_similarity(
-                p1, p2, orientation, HISTOGRAM_BINS, HISTOGRAM_EDGE_DEPTH
+                p1,
+                p2,
+                orientation,
+                self.histogram_bins,
+                self.histogram_edge_depth,
+                self.black_threshold,
             )
 
         # Edge gradient: use preprocessed edge images
@@ -572,17 +708,80 @@ class SimilarityCalculator:
             e1, e2 = pieces_dict["edges"][idx1], pieces_dict["edges"][idx2]
             # Use binary edge comparison with configured depth
             total += self.w_edge * edge_gradient_binary(
-                e1, e2, orientation, EDGE_DEPTH, PROXIMITY_TOLERANCE
+                e1, e2, orientation, self.edge_depth, self.proximity_tolerance
             )
 
         # Contour matching: use contour images
         if self.w_contour > 0 and "contours" in pieces_dict:
             c1, c2 = pieces_dict["contours"][idx1], pieces_dict["contours"][idx2]
-            total += self.w_contour * contour_match(c1, c2, orientation)
+            # Update contour_match to use instance proximity parameters
+            total += self.w_contour * self._contour_match_with_params(
+                c1, c2, orientation
+            )
 
         # Texture: use prep pieces
         if self.w_texture > 0 and "prep" in pieces_dict:
             p1, p2 = pieces_dict["prep"][idx1], pieces_dict["prep"][idx2]
-            total += self.w_texture * texture_match(p1, p2, orientation, TEXTURE_DEPTH)
+            total += self.w_texture * texture_match(
+                p1, p2, orientation, self.texture_depth
+            )
 
         return total
+
+    def _contour_match_with_params(
+        self,
+        c1: Optional[np.ndarray],
+        c2: Optional[np.ndarray],
+        orientation: int,
+    ) -> float:
+        """Contour match using instance proximity parameters."""
+        if c1 is None or c2 is None:
+            return 0.0
+        # Extract edge vectors
+        if orientation == 0:
+            e1, e2 = c1[0, :], c2[-1, :]
+        elif orientation == 1:
+            e1, e2 = c1[-1, :], c2[0, :]
+        elif orientation == 2:
+            e1, e2 = c1[:, 0], c2[:, -1]
+        else:
+            e1, e2 = c1[:, -1], c2[:, 0]
+
+        # Binarize contours (0/1)
+        b1 = (e1 > 127).astype(np.uint8)
+        b2 = (e2 > 127).astype(np.uint8)
+
+        N = b1.size
+        if N == 0:
+            return 0.0
+
+        # Baseline mismatch fraction
+        baseline_mismatch = (
+            float(np.sum(np.abs(b1.astype(np.int32) - b2.astype(np.int32)))) / N
+        )
+
+        # Proximity matching (symmetric): count positions in b1 that have a nearby 1 in b2
+        tol = self.proximity_tolerance
+        matches = 0
+        # b1 -> b2
+        for i in range(N):
+            if b1.flat[i] == 1:
+                start = max(0, i - tol)
+                end = min(N, i + tol + 1)
+                if np.any(b2.flat[start:end] == 1):
+                    matches += 1
+        # b2 -> b1
+        for i in range(N):
+            if b2.flat[i] == 1:
+                start = max(0, i - tol)
+                end = min(N, i + tol + 1)
+                if np.any(b1.flat[start:end] == 1):
+                    matches += 1
+
+        total_positions = 2 * N
+        misses = total_positions - matches
+        proximity_score = (matches - misses) / max(1, total_positions)
+
+        final = baseline_mismatch - (self.proximity_weight_contour * proximity_score)
+        final = max(0.0, min(1.0, final))
+        return float(final)
