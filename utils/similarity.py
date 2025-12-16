@@ -55,6 +55,18 @@ PROXIMITY_WEIGHT_EDGE = 0.5
 PROXIMITY_WEIGHT_CONTOUR = 0.5
 
 # ============================================================================
+# WEIGHTS - configure these to tune the combined similarity scoring
+# Modify THESE constants only. Other code should not pass weights around.
+# ============================================================================
+WEIGHT_COLOR = 1.0
+WEIGHT_GRADIENT = 0.5
+WEIGHT_HISTOGRAM = 0.2
+WEIGHT_EDGE = 0.3
+WEIGHT_CONTOUR = 0.2
+WEIGHT_TEXTURE = 0.1
+
+# ============================================================================
+# ============================================================================
 
 
 def rgb_to_lab(image: np.ndarray) -> np.ndarray:
@@ -502,30 +514,16 @@ class SimilarityCalculator:
     """
     Weighted combination of similarity functions using preprocessed piece types.
 
-    Each metric uses the appropriate preprocessed version:
-        - color: Uses upscaled pieces
-        - gradient: Uses upscaled pieces
-        - histogram: Uses upscaled pieces
-        - edge: Uses edge-extracted pieces
-        - contour: Uses contour pieces
-        - texture: Uses preprocessed pieces
     """
 
-    def __init__(
-        self,
-        weight_color: float = 1.0,
-        weight_gradient: float = 0.5,
-        weight_histogram: float = 0.2,
-        weight_edge: float = 0.3,
-        weight_contour: float = 0.2,
-        weight_texture: float = 0.1,
-    ):
-        self.w_color = weight_color
-        self.w_gradient = weight_gradient
-        self.w_histogram = weight_histogram
-        self.w_edge = weight_edge
-        self.w_contour = weight_contour
-        self.w_texture = weight_texture
+    def __init__(self):
+        # Read weights from module-level constants
+        self.w_color = WEIGHT_COLOR
+        self.w_gradient = WEIGHT_GRADIENT
+        self.w_histogram = WEIGHT_HISTOGRAM
+        self.w_edge = WEIGHT_EDGE
+        self.w_contour = WEIGHT_CONTOUR
+        self.w_texture = WEIGHT_TEXTURE
 
     def compute(
         self,
@@ -577,10 +575,6 @@ class SimilarityCalculator:
         # Contour matching: use contour images
         if self.w_contour > 0 and "contours" in pieces_dict:
             c1, c2 = pieces_dict["contours"][idx1], pieces_dict["contours"][idx2]
-            print(
-                "i contributed with: ",
-                self.w_contour * contour_match(c1, c2, orientation),
-            )
             total += self.w_contour * contour_match(c1, c2, orientation)
 
         # Texture: use prep pieces
