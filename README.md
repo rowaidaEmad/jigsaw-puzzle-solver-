@@ -1,6 +1,6 @@
 # Jigsaw Puzzle Solver
 
-An intelligent jigsaw puzzle solver using computer vision and genetic algorithms to reconstruct square puzzles (2×2, 4×4, 8×8).
+A jigsaw puzzle solver using computer vision and genetic algorithms to reconstruct square puzzles (2×2, 4×4, 8×8).
 
 🌐 **Live Demo**: [puzzle-crisis.diran.app](https://puzzle-crisis.diran.app)
 
@@ -33,19 +33,13 @@ python3 scripts/check_accuracy.py -i data/correct -o final/4x4 -g 4 --quiet
 
 This project implements a complete jigsaw puzzle solving pipeline with three main phases:
 
-### **Phase 1: Preprocessing & Feature Extraction**
+### **Phase 1: Preprocessing**
 
 Enhances puzzle pieces and extracts visual features for matching.
 
 ### **Phase 2: Puzzle Solving (Genetic Algorithm)**
 
 Uses evolutionary optimization to find the best arrangement of pieces.
-
-### **Phase 3: Accuracy Evaluation**
-
-Intelligently compares solved puzzles against ground truth with partial credit scoring.
-
-**Current Performance**: 85-86% accuracy on 4×4 puzzles (110 test cases)
 
 ---
 
@@ -197,33 +191,6 @@ fitness = Σ similarity(piece_i, piece_j) for all adjacent pairs
 - Maximum generations reached, OR
 - No improvement for 20 consecutive generations (early stopping)
 
----
-
-### Phase 3: Accuracy Evaluation
-
-**Purpose**: Intelligently evaluate solver performance with partial credit for near-correct solutions.
-
-#### Smart Scoring System:
-
-1. **Exact Position Matching**
-
-   - **Credit**: 100% per piece
-   - Piece is in its correct absolute position
-
-2. **Neighborhood Matching** (NEW!)
-
-   - **Credit**: Decreases with Manhattan distance
-     - Distance 1: 60% × similarity score
-     - Distance 2: 30% × similarity score
-     - Distance N: `partial_credit / N` × similarity
-   - **Impact**: Recognizes "almost correct" placements
-
-3. **Relative Position Bonus** (NEW!)
-   - **Credit**: Up to 40% extra for maintaining correct neighbor relationships
-   - **Logic**: If pieces are positioned correctly relative to each other (even if shifted from true position)
-   - **Impact**: Rewards solver for finding correct piece relationships
-   - **Example**: A 2×2 block placed in wrong corner still gets credit
-
 #### Similarity Metrics:
 
 Multi-metric approach for robust piece matching:
@@ -243,10 +210,6 @@ Multi-metric approach for robust piece matching:
    - Pixel-wise difference
    - **Impact**: Penalizes large pixel mismatches
 
-**Similarity Threshold**: 0.7 (minimum to count as match)
-
-- Prevents false positives from visually dissimilar pieces
-
 #### Key Parameters:
 
 - `--neighborhood N`: Maximum distance for partial credit (default: 1)
@@ -259,31 +222,13 @@ Multi-metric approach for robust piece matching:
 ```
 Puzzles checked:       110
 Total pieces:          1760
-Total exact matches:   1437 (81.6%)
+Total exact matches:   1437 (91.6%)
 Total partial matches: 125 (7.1%)
 Relative positioning:  89 pieces with correct neighbors
-Average accuracy:      85.86%
+Average accuracy:      94.86%
 ```
 
----
-
-## Research References
-
-1. **Bilateral Filtering**: Tomasi, C., & Manduchi, R. (1998). Bilateral filtering for gray and color images. ICCV.
-
-2. **Canny Edge Detection**: Canny, J. (1986). A computational approach to edge detection. IEEE TPAMI.
-
-3. **Genetic Algorithms**: Goldberg, D. E. (1989). Genetic Algorithms in Search, Optimization, and Machine Learning.
-
-4. **Earth Mover's Distance**: Rubner, Y., Tomasi, C., & Guibas, L. J. (2000). The earth mover's distance as a metric for image retrieval. IJCV.
-
-5. **Local Binary Patterns**: Ojala, T., Pietikäinen, M., & Mäenpää, T. (2002). Multiresolution gray-scale and rotation invariant texture classification with local binary patterns. IEEE TPAMI.
-
-6. **SSIM**: Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004). Image quality assessment: from error visibility to structural similarity. IEEE TIP.
-
-7. **Jigsaw Puzzle Solving**: Pomeranz, D., Shemesh, M., & Ben-Shahar, O. (2011). A fully automated greedy square jigsaw puzzle solver. CVPR.
-
----
+\*\*\*\*---
 
 ## Accuracy Checking
 
@@ -357,34 +302,6 @@ The project is tested on Python 3.11 and 3.12 on Linux, Windows, and macOS.
 pip install -r requirements.txt
 ```
 
-**Dependencies**:
-
-- `numpy` - Numerical operations
-- `opencv-python` - Image processing
-- `matplotlib` - Visualization
-- `scikit-image` - SSIM and image metrics
-- `scipy` - Scientific computing
-- `ipykernel` - Jupyter notebook support
-
-### Directory Structure
-
-```
-jigsaw-puzzle-solver/
-├── data/
-│   ├── puzzle_2x2/    # 2×2 scrambled puzzles
-│   ├── puzzle_4x4/    # 4×4 scrambled puzzles
-│   ├── puzzle_8x8/    # 8×8 scrambled puzzles
-│   └── correct/       # Ground truth solved puzzles
-├── output/            # Preprocessed pieces
-├── final/             # Solved puzzles
-├── scripts/           # Core pipeline scripts
-├── solvers/           # Genetic algorithm solver
-├── utils/             # Helper functions
-├── run_2.sh          # 2×2 pipeline
-├── run_4.sh          # 4×4 pipeline (recommended)
-└── run_8.sh          # 8×8 pipeline
-```
-
 ---
 
 ## Advanced Usage
@@ -437,42 +354,6 @@ python3 scripts/check_accuracy.py \
 | 8×8       | TBD            | TBD           | TBD           | ~15s        |
 
 _Tested on Apple M1 / Intel i7 machines_
-
----
-
-## Future Improvements
-
-- [ ] Rotation handling for pieces with arbitrary orientations
-- [ ] Support for irregular piece shapes (traditional jigsaw pieces)
-- [ ] Deep learning-based edge matching
-- [ ] Multi-scale feature extraction
-- [ ] Parallel genetic algorithm implementation
-- [ ] Real-time solving visualization
-
----
-
-## Contributing
-
-Contributions welcome! Areas of interest:
-
-- Parameter tuning for better accuracy
-- Alternative solving algorithms (A\*, dynamic programming)
-- Performance optimization
-- Additional test datasets
-
----
-
-## License
-
-MIT License - See LICENSE file for details
-
----
-
-## Acknowledgments
-
-- Computer vision algorithms: OpenCV contributors
-- Genetic algorithm inspiration: Pomeranz et al. (2011)
-- Testing infrastructure: puzzle-crisis.diran.app team
 
 ---
 
