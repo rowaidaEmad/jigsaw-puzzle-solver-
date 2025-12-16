@@ -105,7 +105,7 @@ def process_single_puzzle(
 
         if not contours:
             cv2.imwrite(str(dirs["contours"] / base_name), contour_img)
-            return
+            continue  # Continue to next piece instead of returning
 
         areas = [(c, cv2.contourArea(c)) for c in contours]
         areas.sort(key=lambda x: x[1], reverse=True)

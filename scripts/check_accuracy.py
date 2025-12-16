@@ -161,7 +161,9 @@ def calculate_credit(
     # Require minimum similarity threshold
     if similarity < similarity_threshold:
         # Still give some credit if pieces are correctly positioned relative to neighbors
-        return min(relative_bonus, 0.3)  # Cap relative bonus at 30% if similarity is low
+        return min(
+            relative_bonus, 0.3
+        )  # Cap relative bonus at 30% if similarity is low
 
     # Exact position
     if distance == 0:
@@ -180,7 +182,7 @@ def calculate_credit(
 
     # Also scale by similarity
     credit *= similarity
-    
+
     # Add bonus for correct relative positioning
     credit += relative_bonus * 0.5  # Relative bonus worth 50% when in neighborhood
 
@@ -196,59 +198,63 @@ def check_relative_positioning(
     """
     Check if a piece's neighbors are also correctly positioned relative to it.
     Returns a bonus score from 0.0 to 1.0 based on how many neighbors are correct.
-    
+
     Args:
         source_idx: Original position of this piece
         best_match_idx: Where this piece was placed in solved puzzle
         match_results: Results for all pieces so far
         grid_size: Size of the puzzle grid
-    
+
     Returns:
         Relative positioning bonus (0.0 to 1.0)
     """
     # Get neighbors in original puzzle
     original_row, original_col = source_idx // grid_size, source_idx % grid_size
     solved_row, solved_col = best_match_idx // grid_size, best_match_idx % grid_size
-    
+
     correct_relative = 0
     total_neighbors = 0
-    
+
     # Check all 4 directions (up, down, left, right)
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    
+
     for dr, dc in directions:
         # Original neighbor position
         orig_neighbor_row = original_row + dr
         orig_neighbor_col = original_col + dc
-        
+
         # Skip if out of bounds
-        if not (0 <= orig_neighbor_row < grid_size and 0 <= orig_neighbor_col < grid_size):
+        if not (
+            0 <= orig_neighbor_row < grid_size and 0 <= orig_neighbor_col < grid_size
+        ):
             continue
-        
+
         orig_neighbor_idx = orig_neighbor_row * grid_size + orig_neighbor_col
-        
+
         # Check if this neighbor has been processed
         if orig_neighbor_idx >= len(match_results):
             continue
-            
+
         total_neighbors += 1
-        
+
         # Where the neighbor was placed
         neighbor_solved_idx = match_results[orig_neighbor_idx].best_match_position
         neighbor_solved_row = neighbor_solved_idx // grid_size
         neighbor_solved_col = neighbor_solved_idx % grid_size
-        
+
         # Check if relative position is maintained
         expected_solved_row = solved_row + dr
         expected_solved_col = solved_col + dc
-        
-        if (neighbor_solved_row == expected_solved_row and 
-            neighbor_solved_col == expected_solved_col):
+
+        if (
+            neighbor_solved_row == expected_solved_row
+            and neighbor_solved_col == expected_solved_col
+        ):
             correct_relative += 1
-    
+
     if total_neighbors == 0:
         return 0.0
-    
+
     return correct_relative / total_neighbors
 
 
@@ -285,7 +291,9 @@ def check_puzzle_accuracy(
         print(f"Neighborhood size: {max_neighborhood}")
         print(f"Partial credit factor: {partial_credit_factor}")
         print(f"Similarity threshold: {similarity_threshold}")
-        print(f"Relative positioning bonus: {'Enabled' if use_relative_bonus else 'Disabled'}\n")
+        print(
+            f"Relative positioning bonus: {'Enabled' if use_relative_bonus else 'Disabled'}\n"
+        )
 
     # First pass: Find best match for each piece
     temp_results = []
@@ -344,12 +352,17 @@ def check_puzzle_accuracy(
         match_results.append(final_result)
 
         if verbose and (result.is_exact or credit > 0):
-            row, col = result.source_position // grid_size, result.source_position % grid_size
+            row, col = (
+                result.source_position // grid_size,
+                result.source_position % grid_size,
+            )
             status = "EXACT" if result.is_exact else f"NEAR(d={result.distance})"
             rel_info = f" rel={relative_bonus:.2f}" if relative_bonus > 0 else ""
-            print(f"Piece [{row},{col}] pos={result.source_position:2d}: {status} "
-                  f"match={result.best_match_position:2d} sim={result.best_match_score:.3f} "
-                  f"credit={credit:.3f}{rel_info}")
+            print(
+                f"Piece [{row},{col}] pos={result.source_position:2d}: {status} "
+                f"match={result.best_match_position:2d} sim={result.best_match_score:.3f} "
+                f"credit={credit:.3f}{rel_info}"
+            )
 
     # Calculate statistics
     exact_matches = sum(1 for r in match_results if r.is_exact)
