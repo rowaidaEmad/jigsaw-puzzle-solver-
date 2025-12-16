@@ -1,6 +1,7 @@
 # for this project
 output/
 final/
+results_1/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -2,3 +2,4 @@ numpy
 opencv-python
 matplotlib
 ipykernel
+scikit-image

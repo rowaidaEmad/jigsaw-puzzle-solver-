@@ -1,6 +1,5 @@
-"""Puzzle solving algorithms."""
+"""Jigsaw Puzzle Solvers"""
 
-from .solver import solve
-from .genetic import GeneticSolver
+from .solver import PuzzleSolver
 
-__all__ = ["solve", "GeneticSolver"]
+__all__ = ["PuzzleSolver"]
