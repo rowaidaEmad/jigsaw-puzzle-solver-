@@ -8,32 +8,35 @@ const examples = [
   {
     title: '2×2 Puzzle',
     description: '4 pieces - Perfect for testing basic algorithms',
-    variants: ['2x2_a', '2x2_b'],
-  },
-  {
-    title: '4×4 Puzzle',
-    description: '16 pieces - Medium complexity with clear features',
-    variants: ['4x4_a', '4x4_b', '4x4_c'],
+    variants: ['48'],
+    imageId: 48,
+    gridSize: '2x2',
   },
   {
     title: '8×8 Puzzle',
     description: '64 pieces - High complexity, maximum challenge',
-    variants: ['8x8_a', '8x8_b', '8x8_c'],
+    variants: ['67'],
+    imageId: 67,
+    gridSize: '8x8',
   },
 ];
 
 const steps = [
-  { id: 1, name: 'Original', desc: 'Raw puzzle tile' },
-  { id: 2, name: 'Upscaled', desc: 'Lanczos interpolation + sharpening' },
-  { id: 3, name: 'Binary', desc: 'Adaptive threshold + morphology' },
-  { id: 4, name: 'Edges', desc: 'Canny edge detection' },
-  { id: 5, name: 'Contours', desc: 'Shape extraction' },
+  { id: 'prep', name: 'Preprocessed', desc: 'Enhanced image quality' },
+  { id: 'upscaled', name: 'Upscaled', desc: 'Lanczos interpolation + sharpening' },
+  { id: 'binary', name: 'Binary', desc: 'Adaptive threshold + morphology' },
+  { id: 'edges', name: 'Edges', desc: 'Canny edge detection' },
+  { id: 'contours', name: 'Contours', desc: 'Shape extraction' },
 ];
 
 export default function ExamplesPage() {
   const [selectedVariant, setSelectedVariant] = useState<{ [key: string]: number }>({
     '2×2 Puzzle': 0,
-    '4×4 Puzzle': 0,
+    '8×8 Puzzle': 0,
+  });
+
+  const [selectedPiece, setSelectedPiece] = useState<{ [key: string]: number }>({
+    '2×2 Puzzle': 0,
     '8×8 Puzzle': 0,
   });
 
@@ -52,10 +55,10 @@ export default function ExamplesPage() {
         <div className="mb-16 p-6 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
           <h2 className="text-lg font-semibold text-black dark:text-white mb-4">Pipeline Steps</h2>
           <div className="grid md:grid-cols-5 gap-4">
-            {steps.map(step => (
+            {steps.map((step, idx) => (
               <div key={step.id} className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  {step.id}
+                  {idx + 1}
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-black dark:text-white">{step.name}</h3>
@@ -69,75 +72,138 @@ export default function ExamplesPage() {
         {/* Examples */}
         <div className="space-y-16">
           {examples.map((example, idx) => {
-            const currentVariant = selectedVariant[example.title] || 0;
-            const variantName = example.variants[currentVariant];
+            const currentPiece = selectedPiece[example.title] || 0;
+            const imageId = example.imageId;
+            const gridSize = example.gridSize === '2x2' ? 2 : 8;
+            const totalPieces = gridSize * gridSize;
+            const pieceRow = Math.floor(currentPiece / gridSize);
+            const pieceCol = currentPiece % gridSize;
 
             return (
               <div key={example.title} className="space-y-6">
-                {/* Title and Variant Selector */}
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
+                {/* Title and Description */}
+                <div className="flex flex-col gap-3">
                   <div>
                     <h2 className="text-3xl font-bold text-black dark:text-white">{example.title}</h2>
                     <p className="text-slate-600 dark:text-slate-400">{example.description}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">Image {imageId}</p>
                   </div>
 
-                  {example.variants.length > 1 && (
-                    <div className="flex gap-2">
-                      {example.variants.map((_, variantIdx) => (
-                        <Button
-                          key={variantIdx}
-                          size="sm"
-                          variant={currentVariant === variantIdx ? 'default' : 'outline'}
-                          onClick={() =>
-                            setSelectedVariant({
-                              ...selectedVariant,
-                              [example.title]: variantIdx,
-                            })
-                          }
-                          className={
-                            currentVariant === variantIdx
-                              ? 'bg-primary hover:bg-primary/90 text-white'
-                              : 'border-slate-300 dark:border-slate-700'
-                          }>
-                          Example {variantIdx + 1}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
+                  {/* Piece Selector */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-black dark:text-white">Select Piece:</span>
+                    <select
+                      value={currentPiece}
+                      onChange={e =>
+                        setSelectedPiece({
+                          ...selectedPiece,
+                          [example.title]: parseInt(e.target.value),
+                        })
+                      }
+                      className="px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-black dark:text-white text-sm">
+                      {Array.from({ length: totalPieces }, (_, i) => {
+                        const row = Math.floor(i / gridSize);
+                        const col = i % gridSize;
+                        return (
+                          <option key={i} value={i}>
+                            Piece {i} (Row {row}, Col {col})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
                 </div>
 
-                {/* Images Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {steps.map(step => (
-                    <div key={step.id} className="group">
-                      <div className="aspect-square rounded-lg overflow-hidden border-2 border-slate-200 dark:border-slate-800 hover:border-primary transition mb-3">
+                {/* Input Image Section */}
+                <div className="p-6 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+                  <h3 className="text-lg font-semibold text-black dark:text-white mb-4">Input</h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Full Puzzle */}
+                    <div>
+                      <div className="aspect-square rounded-lg overflow-hidden border-2 border-slate-200 dark:border-slate-800">
                         <Image
-                          src={`/examples/${variantName}_${step.id}_${step.name.toLowerCase()}.jpg`}
-                          alt={`${example.title} - ${step.name}`}
-                          width={300}
-                          height={300}
-                          className="w-full h-full object-cover group-hover:scale-105 transition"
+                          src={`/examples/${imageId}/input.png`}
+                          alt={`${example.title} - Input`}
+                          width={400}
+                          height={400}
+                          className="w-full h-full object-cover"
+                          unoptimized
                         />
                       </div>
-                      <div className="text-center">
-                        <p className="text-sm font-semibold text-black dark:text-white">{step.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-500">{step.desc}</p>
-                      </div>
+                      <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-2">
+                        Full puzzle ({gridSize}×{gridSize} = {totalPieces} pieces)
+                      </p>
                     </div>
-                  ))}
+                    {/* Selected Piece */}
+                    <div>
+                      <div className="aspect-square rounded-lg overflow-hidden border-2 border-primary">
+                        <Image
+                          src={`/examples/${imageId}/original/puzzle_${String(imageId).padStart(3, '0')}_r${pieceRow}_c${pieceCol}.png`}
+                          alt={`Piece ${currentPiece}`}
+                          width={400}
+                          height={400}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      </div>
+                      <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-2">
+                        Selected Piece {currentPiece} (Row {pieceRow}, Col {pieceCol})
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Processing Pipeline */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-black dark:text-white">Preprocessing Pipeline - Piece {currentPiece}</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {steps.map((step, stepIdx) => (
+                      <div key={step.id} className="group">
+                        <div className="aspect-square rounded-lg overflow-hidden border-2 border-slate-200 dark:border-slate-800 hover:border-primary transition mb-3">
+                          <Image
+                            src={`/examples/${imageId}/${step.id}/puzzle_${String(imageId).padStart(3, '0')}_r${pieceRow}_c${pieceCol}.png`}
+                            alt={`${example.title} - ${step.name}`}
+                            width={300}
+                            height={300}
+                            className="w-full h-full object-cover group-hover:scale-105 transition"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-semibold text-black dark:text-white">
+                            {stepIdx + 1}. {step.name}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-500">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Solved Result */}
+                <div className="p-4 rounded-lg bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30">
+                  <h3 className="text-lg font-semibold text-black dark:text-white mb-4">Solved Result</h3>
+                  <div className="flex justify-center">
+                    <div className="max-w-md w-full">
+                      <div className="aspect-square rounded-lg overflow-hidden border border-primary/30 dark:border-primary/40">
+                        <Image
+                          src={`/examples/${imageId}/solved/solution.png`}
+                          alt={`${example.title} - Solved`}
+                          width={400}
+                          height={400}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      </div>
+                      <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-2 font-medium">
+                        ✓ Successfully solved using genetic algorithm
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
           })}
-        </div>
-
-        {/* CTA */}
-        <div className="mt-20 text-center p-12 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-          <h2 className="text-3xl font-bold text-black dark:text-white mb-4">Ready to try it yourself?</h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">Upload your own puzzle image and see the preprocessing in action</p>
-          <Button disabled size="lg" className="bg-primary hover:bg-primary/90 text-white">
-            Try It Now (Coming Soon)
-          </Button>
         </div>
       </main>
     </div>

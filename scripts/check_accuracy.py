@@ -540,35 +540,11 @@ def main():
 
         total_puzzles = len(all_results)
         avg_accuracy = np.mean([r["result"]["accuracy"] for r in all_results])
-        avg_exact = np.mean([r["result"]["exact_matches"] for r in all_results])
-        avg_partial = np.mean([r["result"]["partial_matches"] for r in all_results])
-
-        total_pieces = sum(r["result"]["total_pieces"] for r in all_results)
-        total_exact = sum(r["result"]["exact_matches"] for r in all_results)
-        total_partial = sum(r["result"]["partial_matches"] for r in all_results)
-        total_credit = sum(r["result"]["total_credit"] for r in all_results)
 
         print(f"Puzzles checked:       {total_puzzles}")
-        print(f"Total pieces:          {total_pieces}")
-        print(
-            f"Total exact matches:   {total_exact} ({total_exact/total_pieces*100:.1f}%)"
-        )
-        print(
-            f"Total partial matches: {total_partial} ({total_partial/total_pieces*100:.1f}%)"
-        )
-        print(f"Total credit:          {total_credit:.2f}")
         print(f"Average accuracy:      {avg_accuracy:.2f}%")
-        print(f"\nPer puzzle averages:")
-        print(f"  Exact matches:       {avg_exact:.1f}")
-        print(f"  Partial matches:     {avg_partial:.1f}")
         print(f"{'='*70}")
 
-        # Show best and worst
-        best = max(all_results, key=lambda x: x["result"]["accuracy"])
-        worst = min(all_results, key=lambda x: x["result"]["accuracy"])
-
-        print(f"\nBest:  {best['filename']} - {best['result']['accuracy']:.2f}%")
-        print(f"Worst: {worst['filename']} - {worst['result']['accuracy']:.2f}%")
     else:
         print("\nNo puzzles were successfully checked.")
 

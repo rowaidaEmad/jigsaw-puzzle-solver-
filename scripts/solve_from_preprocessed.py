@@ -103,7 +103,7 @@ def main():
     parser.add_argument(
         "-m", "--method", choices=["greedy", "genetic"], default="genetic"
     )
-    parser.add_argument("--generations", type=int, default=100, help="GA generations")
+    parser.add_argument("--generations", type=int, default=150, help="GA generations")
     parser.add_argument(
         "--population", type=int, default=100, help="GA population size"
     )

@@ -22,7 +22,27 @@ fi
 echo ""
 echo "Step 2: Solving puzzles..."
 echo "=========================================="
-python3 scripts/solve_from_preprocessed.py -d output/2x2 --all --output-dir final/2x2 --simple-names
+python3 scripts/solve_from_preprocessed.py \
+    -d output/2x2 \
+    --all \
+    --output-dir final/2x2 \
+    --simple-names \
+    --weight-color 2.0 \
+    --weight-gradient 1.0 \
+    --weight-histogram 1.0 \
+    --weight-edge 1.0 \
+    --weight-contour 1.0 \
+    --weight-texture 1.0 \
+    --color-depth 4 \
+    --edge-depth 5 \
+    --histogram-edge-depth 3 \
+    --texture-depth 4 \
+    --black-threshold 10 \
+    --histogram-bins 256 \
+    --proximity-tolerance 2 \
+    --proximity-weight-edge 0.5 \
+    --proximity-weight-contour 0.5 \
+    --use-lab-color true
 
 if [ $? -ne 0 ]; then
     echo "Error: Solving failed!"
