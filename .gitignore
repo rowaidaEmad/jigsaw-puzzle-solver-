@@ -1,6 +1,4 @@
-# for this project
-output/
-final/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -59,6 +57,7 @@ cover/
 *.mo
 *.pot
 
+TECHNICAL_GUIDE.md
 # Django stuff:
 *.log
 local_settings.py
@@ -154,6 +153,7 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
+
 
 # mkdocs documentation
 /site
